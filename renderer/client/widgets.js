@@ -256,12 +256,43 @@
     });
   }
 
+  /* ----------------------------------------------------------------- nav */
+
+  /** The mobile menu button, and dropdowns on touch, where there is no hover. */
+  function bindMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bz-collapse]'), function (wrap) {
+      var toggle = wrap.querySelector('.bz-menu-toggle');
+      if (!toggle) return;
+      toggle.addEventListener('click', function () {
+        var open = wrap.hasAttribute('data-open');
+        if (open) wrap.removeAttribute('data-open');
+        else wrap.setAttribute('data-open', '');
+        toggle.setAttribute('aria-expanded', String(!open));
+      });
+    });
+
+    // A parent with a submenu is a link *and* a disclosure. On a pointer device
+    // hover opens it and the link still works; on touch there is no hover, so
+    // the first tap opens and the second follows.
+    if (!window.matchMedia || !window.matchMedia('(hover: none)').matches) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.bz-navitem--has-sub'), function (item) {
+      var link = item.querySelector(':scope > a');
+      if (!link) return;
+      link.addEventListener('click', function (event) {
+        if (item.hasAttribute('data-open')) return;
+        event.preventDefault();
+        item.setAttribute('data-open', '');
+      });
+    });
+  }
+
   /* ---------------------------------------------------------------- init */
 
   function init() {
     Array.prototype.forEach.call(document.querySelectorAll('[data-bz-hydrate]'), hydrate);
     Array.prototype.forEach.call(document.querySelectorAll('form.bz-form'), bindForm);
     bindFormCtas();
+    bindMenus();
   }
 
   if (document.readyState === 'loading') {

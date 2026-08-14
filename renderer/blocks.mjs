@@ -16,6 +16,7 @@
 
 import { attrs, cls, esc, heading, href, image, isExternal, join, tagAttrs } from './html.mjs';
 import { renderForm } from './forms.mjs';
+import { renderMenu } from './menus.mjs';
 import { renderWidget } from './widgets.mjs';
 
 /* ------------------------------------------------------------------ schemas */
@@ -414,6 +415,120 @@ const BLOCKS = {
     },
     render(props, ctx, block) {
       return renderWidget(props, ctx, block);
+    },
+  },
+
+  /* ------------------------------------------------------------ chrome */
+  // These are what a header or footer template is built from. They are ordinary
+  // blocks, edited in the same canvas as a page, because "the header is a
+  // template you edit like a page" is the whole point of the theme builder.
+
+  bar: {
+    label: 'Bar',
+    category: 'chrome',
+    schema: {
+      type: 'object',
+      properties: {
+        columns: {
+          type: 'array',
+          description:
+            'Two or three groups laid out across the bar — typically logo, navigation, and a call to action.',
+          minItems: 1,
+          maxItems: 3,
+          items: { type: 'array', items: { $ref: '#/definitions/contentBlock' } },
+        },
+        background: str('Bar background.', {
+          enum: ['card', 'paper', 'ink', 'transparent'],
+          default: 'card',
+        }),
+        sticky: bool('Keep the bar in view as the page scrolls.'),
+        density: str('Vertical padding.', { enum: ['compact', 'regular'], default: 'regular' }),
+        divider: bool('Draw a hairline under the bar.'),
+      },
+      required: ['columns'],
+    },
+    render(props, ctx, block, renderChildren) {
+      const columns = Array.isArray(props.columns) ? props.columns.slice(0, 3) : [];
+      if (!columns.length) return '';
+      const inner = columns.map((col) => `<div class="bz-bar__cell">${renderChildren(col, ctx)}</div>`);
+      return `<div class="${cls(
+        'bz-bar',
+        `bz-bar--${props.background || 'card'}`,
+        props.density === 'compact' && 'bz-bar--compact',
+        props.sticky && 'bz-bar--sticky',
+        props.divider && 'bz-bar--divider',
+      )}"><div class="bz-container bz-bar__inner">${join(inner, '')}</div></div>`;
+    },
+  },
+
+  logo: {
+    label: 'Logo',
+    category: 'chrome',
+    schema: {
+      type: 'object',
+      properties: {
+        image: IMAGE_SCHEMA,
+        /* Falls back to the business name so a site with no logo uploaded yet
+           still shows something a visitor can click home. */
+        text: str('Shown when there is no logo image. Defaults to the business name.'),
+        url: str('Where the logo links.', { default: '/' }),
+        height: int('Rendered height in pixels.', { minimum: 16, maximum: 120, default: 34 }),
+      },
+    },
+    render(props, ctx) {
+      const label = props.text || (ctx && ctx.businessName) || 'Home';
+      const inner =
+        props.image && props.image.src
+          ? image(
+              { ...props.image, alt: props.image.alt || label },
+              { eager: true, class: 'bz-logo__img', height: props.height || 34 },
+            )
+          : `<span class="bz-logo__word">${esc(label)}</span>`;
+      return `<a class="bz-brand" href="${esc(href(props.url || '/', ctx))}"${attrs({
+        style: props.height ? `--bz-logo-h:${Number(props.height)}px` : null,
+        'data-bz-el': 'logo',
+      })}>${inner}</a>`;
+    },
+  },
+
+  menu: {
+    label: 'Menu',
+    category: 'chrome',
+    schema: {
+      type: 'object',
+      properties: {
+        /* A location is the usual choice — "whatever is assigned to Primary" —
+           so swapping the site's main menu is one change in Menus rather than an
+           edit to every template that shows it. */
+        location: str(
+          'Which menu to show. Use a location id (primary, mobile, footer, legal, utility) so the menu can be swapped from the Menus screen, or a menu id to pin one specific menu.',
+        ),
+        layout: str('Direction.', { enum: ['horizontal', 'vertical'], default: 'horizontal' }),
+        collapseOnMobile: bool('Collapse behind a menu button on small screens.', ),
+        align: str('Alignment within its cell.', { enum: ['start', 'center', 'end'], default: 'start' }),
+      },
+      required: ['location'],
+    },
+    render(props, ctx) {
+      const html = renderMenu(ctx && ctx.menus, props.location, ctx);
+      if (!html) {
+        // An unassigned location is a normal state during setup, so the editor
+        // shows a hint rather than nothing at all — an invisible block is
+        // indistinguishable from a broken one.
+        return ctx && ctx.editing
+          ? `<p class="bz-widget__empty">No menu assigned to “${esc(props.location)}” yet.</p>`
+          : '';
+      }
+      const nav = `<nav class="${cls(
+        'bz-menu',
+        `bz-menu--${props.layout || 'horizontal'}`,
+        `bz-menu--${props.align || 'start'}`,
+      )}" aria-label="${esc(props.location)}">${html}</nav>`;
+      if (!props.collapseOnMobile) return nav;
+      return `<div class="bz-menu-wrap" data-bz-collapse>
+  <button class="bz-menu-toggle" type="button" aria-expanded="false" aria-label="Menu"><span></span><span></span><span></span></button>
+  ${nav}
+</div>`;
     },
   },
 
@@ -921,9 +1036,14 @@ function stripUnsafe(html) {
 
 /* ----------------------------------------------------------------- registry */
 
-/** Block ids that may sit inside a row column. */
+/** Block ids that may sit inside a row column or a bar cell. */
 export const CONTENT_BLOCK_TYPES = Object.entries(BLOCKS)
-  .filter(([, def]) => def.category === 'content' || def.category === 'widget')
+  .filter(([, def]) => ['content', 'widget', 'chrome'].includes(def.category))
+  .map(([id]) => id);
+
+/** Block ids a header or footer template is built from. */
+export const CHROME_BLOCK_TYPES = Object.entries(BLOCKS)
+  .filter(([, def]) => def.category === 'chrome')
   .map(([id]) => id);
 
 /** Block ids that are always full-width and top-level. */

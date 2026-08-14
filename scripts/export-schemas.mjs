@@ -13,14 +13,27 @@ import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { RENDERER_VERSION, blockCatalogue, staticWidgetIds, MENU_LOCATIONS, SLOTS, TOKEN_GROUPS } from '../renderer/index.mjs';
+import {
+  RENDERER_VERSION,
+  blockCatalogue,
+  staticWidgetIds,
+  DEFAULT_TOKENS,
+  MENU_ITEM_TYPES,
+  MENU_LOCATIONS,
+  SLOTS,
+  TOKEN_GROUPS,
+} from '../renderer/index.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'block-schemas.json');
 
 const catalogue = {
   rendererVersion: RENDERER_VERSION,
   tokenGroups: TOKEN_GROUPS,
+  // The starter token set travels with the catalogue so the dashboard can offer
+  // a full, editable design system for a repo that has no tokens file yet.
+  defaultTokens: DEFAULT_TOKENS,
   menuLocations: MENU_LOCATIONS,
+  menuItemTypes: MENU_ITEM_TYPES,
   templateSlots: SLOTS,
   staticWidgets: staticWidgetIds(),
   blocks: blockCatalogue(),

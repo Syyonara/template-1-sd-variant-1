@@ -1,35 +1,39 @@
 {
-  "desktop-main": {
-    "label": "Desktop main",
-    "items": [
-      { "label": "Home", "href": "/" },
-      { "label": "Inventory", "href": "/store" },
-      { "label": "About", "href": "/about" },
-      { "label": "Contact", "href": "/contact" }
-    ]
+  "version": 2,
+  "menus": {
+    "main": {
+      "id": "main",
+      "name": "Main menu",
+      "items": [
+        { "id": "home", "label": "Home", "type": "page", "ref": "home" },
+        { "id": "inventory", "label": "Inventory", "type": "inventory" },
+        { "id": "about", "label": "About", "type": "url", "url": "/about" },
+        { "id": "contact", "label": "Contact", "type": "url", "url": "/contact" }
+      ]
+    },
+    "footer": {
+      "id": "footer",
+      "name": "Footer menu",
+      "items": [
+        { "id": "f-inventory", "label": "Inventory", "type": "inventory" },
+        { "id": "f-about", "label": "About", "type": "url", "url": "/about" },
+        { "id": "f-contact", "label": "Contact", "type": "url", "url": "/contact" }
+      ]
+    },
+    "legal": {
+      "id": "legal",
+      "name": "Legal",
+      "items": [
+        { "id": "privacy", "label": "Privacy", "type": "url", "url": "/privacy" },
+        { "id": "terms", "label": "Terms", "type": "url", "url": "/terms" }
+      ]
+    }
   },
-  "mobile-main": {
-    "label": "Mobile main",
-    "items": [
-      { "label": "Home", "href": "/" },
-      { "label": "Inventory", "href": "/store" },
-      { "label": "About", "href": "/about" },
-      { "label": "Contact", "href": "/contact" }
-    ]
-  },
-  "desktop-footer": {
-    "label": "Desktop footer",
-    "items": [
-      { "label": "Inventory", "href": "/store" },
-      { "label": "About", "href": "/about" },
-      { "label": "Contact", "href": "/contact" }
-    ]
-  },
-  "mobile-footer": {
-    "label": "Mobile footer",
-    "items": [
-      { "label": "Inventory", "href": "/store" },
-      { "label": "Contact", "href": "/contact" }
-    ]
+  "locations": {
+    "primary": "main",
+    "mobile": "main",
+    "footer": "footer",
+    "legal": "legal",
+    "utility": null
   }
 }

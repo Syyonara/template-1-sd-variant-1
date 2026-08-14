@@ -37,10 +37,10 @@ ai/                     THE AI CONTRACT                                    [plat
 site/
   tokens.json           DESIGN SYSTEM — colors, status, type, spacing, radius, fonts
   tokens/<scope>.json   Per-brand scoped overrides (may only set existing keys)
-  menus.json            Four menu locations; injected into the chrome at build
+  menus.json            Named menus + which menu each theme location shows
   buttons.json          CTA library — label, destination, style, tagging intent
   forms/<id>.json       Form library — fields, logic, consent, notification routing
-  templates/<slot>--<name>.json   Header / footer / utility-nav templates, as block lists
+  templates/<slot>--<name>.json   Header and footer templates, as block lists
   assignments.json      Which template each slot resolves to, per display condition
   pages.json            Page manifest: path, status, seo, per-page template overrides
   reset.css             Minimal global reset
@@ -154,3 +154,16 @@ only. The plugin's `SiteRepoService.syncPlatformFiles()` pushes `renderer/`,
 bypassing the editor's write allowlist the same way provisioning does. Platform-owned
 paths are exactly the paths that sync; `site/`, `public/` and `dealer.config.json` are
 never touched by it.
+
+
+---
+
+## Changes in the renderer's 3.0.0
+
+| # | Change | Reason |
+| --- | --- | --- |
+| 1 | Menus follow the WordPress model: any number of named menus, and a *location* (primary, mobile, footer, legal, utility) that a menu is assigned to | The four hardcoded location-shaped menus made it impossible to have one "Legal" menu appear in two places, or to swap the site's main menu without retyping every item. A v1 `menus.json` still renders — each old location becomes a menu of the same name assigned to the matching new location. |
+| 2 | Menu items point at a page by slug, not by address | Renaming a page's address used to leave a dead link in every menu that referenced it. |
+| 3 | Two site parts, `header` and `footer` — `utilityNav` and `siteFooter` are gone | They were slots, which baked the layout into the slot list: there was no way to put a utility bar *below* the nav. A utility bar is now a `bar` block inside the header template, where it can go anywhere. |
+| 4 | New chrome blocks: `bar`, `logo`, `menu`; starter `header--default` and `footer--default` templates | A header is a template you edit in the same canvas as a page. Hand-written `site/chrome/*.html` still renders for repos that have no template yet. |
+| 5 | `DEFAULT_TOKENS` and `withDefaults()` | A repo with no `site/tokens.json` used to leave the design system screen empty and unusable. There is always a full token set to edit now, and saving writes the file. A partial token file is merged rather than compiled with holes in it. |

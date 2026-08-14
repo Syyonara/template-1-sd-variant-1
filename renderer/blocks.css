@@ -272,3 +272,118 @@ a.bz-card:hover { border-color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   .bz-btn, .bz-card, .bz-quick { transition: none; }
 }
+
+/* ------------------------------------------------------------------ chrome */
+/* Header and footer are templates built from these, edited in the same canvas a
+   page is. Nothing here is per-dealer: the look comes from the tokens. */
+
+.bz-bar { background: var(--card); color: var(--ink); }
+.bz-bar--paper { background: var(--paper); }
+.bz-bar--transparent { background: transparent; }
+.bz-bar--ink { background: var(--ink); color: #fff; }
+.bz-bar--divider { border-bottom: 1px solid var(--line); }
+.bz-bar--ink.bz-bar--divider { border-bottom-color: rgba(255, 255, 255, 0.15); }
+.bz-bar--sticky { position: sticky; top: 0; z-index: 20; }
+
+.bz-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+}
+.bz-bar--compact .bz-bar__inner { padding-block: var(--space-2); }
+.bz-bar__cell { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
+.bz-bar__cell:nth-child(2) { flex: 1 1 auto; }
+.bz-bar__cell:last-child { justify-content: flex-end; }
+.bz-bar__cell .bz-btns { margin-block: 0; }
+.bz-bar__cell .bz-block { padding-block: 0; }
+.bz-bar__cell .bz-container { max-width: none; padding-inline: 0; }
+.bz-bar--ink .bz-block p { color: rgba(255, 255, 255, 0.75); font-size: var(--text-small); }
+
+/* A footer stacks on a phone; a header does not, because the menu collapses. */
+@media (max-width: 767px) {
+  .bz-bar--ink .bz-bar__inner { flex-direction: column; align-items: flex-start; }
+  .bz-bar--ink .bz-bar__cell { width: 100%; justify-content: flex-start; }
+}
+
+.bz-brand { display: inline-flex; align-items: center; gap: var(--space-2); text-decoration: none; color: inherit; }
+.bz-logo__img { height: var(--bz-logo-h, 34px); width: auto; }
+.bz-logo__word { font: 800 var(--text-h3) / 1 var(--font-heading); letter-spacing: -0.01em; }
+
+.bz-menu { display: flex; min-width: 0; }
+.bz-menu--center { justify-content: center; }
+.bz-menu--end { justify-content: flex-end; }
+.bz-menu--horizontal .bz-nav { flex-direction: row; align-items: center; }
+.bz-menu--vertical .bz-nav { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.bz-nav { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+.bz-navitem > a,
+.bz-navlabel {
+  display: inline-block;
+  padding-block: var(--space-1);
+  font: 600 var(--text-small) / 1.2 var(--font-heading);
+  color: inherit;
+  text-decoration: none;
+}
+.bz-bar--ink .bz-navitem > a { color: rgba(255, 255, 255, 0.85); }
+.bz-navitem > a:hover { color: var(--accent-dark); }
+.bz-bar--ink .bz-navitem > a:hover { color: #fff; }
+.bz-navlabel { color: var(--muted); font-weight: 700; }
+.bz-navitem > a[aria-current='page'] { color: var(--accent-dark); }
+
+/* One level of dropdown, opened on hover and on focus so it is reachable from a
+   keyboard. The chrome script adds a click fallback on touch. */
+.bz-navitem--has-sub { position: relative; }
+.bz-subnav {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 30;
+  display: none;
+  min-width: 12rem;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3);
+  list-style: none;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+}
+.bz-navitem--has-sub:hover > .bz-subnav,
+.bz-navitem--has-sub:focus-within > .bz-subnav,
+.bz-navitem--has-sub[data-open] > .bz-subnav { display: flex; }
+.bz-subnav .bz-navitem > a { color: var(--ink); }
+.bz-menu--vertical .bz-subnav { position: static; display: flex; border: 0; padding: var(--space-2) 0 0 var(--space-3); background: none; box-shadow: none; }
+
+.bz-menu-wrap { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1 1 auto; }
+.bz-menu-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-2);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+.bz-menu-toggle span { display: block; width: 18px; height: 2px; background: currentColor; }
+
+@media (max-width: 899px) {
+  .bz-menu-toggle { display: inline-flex; }
+  .bz-menu-wrap > .bz-menu { display: none; }
+  .bz-menu-wrap[data-open] > .bz-menu {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: var(--space-4);
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+  .bz-menu-wrap[data-open] .bz-nav { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .bz-bar__inner { position: relative; }
+}

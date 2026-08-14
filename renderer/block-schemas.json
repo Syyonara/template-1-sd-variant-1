@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "2.0.0",
+  "rendererVersion": "3.0.0",
   "tokenGroups": {
     "colors": [
       "accent",
@@ -49,17 +49,94 @@
       "container"
     ]
   },
+  "defaultTokens": {
+    "version": 2,
+    "fonts": {
+      "heading": "Plus Jakarta Sans",
+      "body": "Plus Jakarta Sans",
+      "files": []
+    },
+    "colors": {
+      "accent": "#d99038",
+      "accentDark": "#b8762a",
+      "ink": "#111c3a",
+      "inkDark": "#0a1226",
+      "muted": "#7c86a2",
+      "line": "#dde3ee",
+      "card": "#ffffff",
+      "paper": "#f4f6fb"
+    },
+    "status": {
+      "ok": "#3a6b4a",
+      "info": "#3a5ea8",
+      "warn": "#b5761f",
+      "bad": "#b03a32"
+    },
+    "type": {
+      "h1": 48,
+      "h2": 34,
+      "h3": 24,
+      "body": 16,
+      "small": 14,
+      "eyebrow": 12
+    },
+    "spacing": {
+      "1": 4,
+      "2": 8,
+      "3": 12,
+      "4": 16,
+      "5": 24,
+      "6": 32,
+      "7": 48
+    },
+    "radius": {
+      "nav": 6,
+      "input": 8,
+      "card": 10,
+      "modal": 14,
+      "chip": 999
+    },
+    "layout": {
+      "container": "1160px"
+    }
+  },
   "menuLocations": [
-    "desktop-main",
-    "mobile-main",
-    "desktop-footer",
-    "mobile-footer"
+    {
+      "id": "primary",
+      "label": "Primary",
+      "description": "The main navigation in your header."
+    },
+    {
+      "id": "mobile",
+      "label": "Mobile",
+      "description": "Shown behind the menu button on small screens."
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "description": "The main footer navigation."
+    },
+    {
+      "id": "legal",
+      "label": "Legal",
+      "description": "Privacy, terms and similar, usually in the footer."
+    },
+    {
+      "id": "utility",
+      "label": "Utility",
+      "description": "A thin bar above the header — phone, hours, account."
+    }
+  ],
+  "menuItemTypes": [
+    "page",
+    "post",
+    "inventory",
+    "url",
+    "label"
   ],
   "templateSlots": [
-    "utilityNav",
     "header",
-    "footer",
-    "siteFooter"
+    "footer"
   ],
   "staticWidgets": [
     "locations-map",
@@ -442,6 +519,154 @@
         },
         "required": [
           "widget"
+        ]
+      }
+    },
+    {
+      "id": "bar",
+      "label": "Bar",
+      "category": "chrome",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "array",
+            "description": "Two or three groups laid out across the bar — typically logo, navigation, and a call to action.",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/contentBlock"
+              }
+            }
+          },
+          "background": {
+            "type": "string",
+            "description": "Bar background.",
+            "enum": [
+              "card",
+              "paper",
+              "ink",
+              "transparent"
+            ],
+            "default": "card"
+          },
+          "sticky": {
+            "type": "boolean",
+            "description": "Keep the bar in view as the page scrolls."
+          },
+          "density": {
+            "type": "string",
+            "description": "Vertical padding.",
+            "enum": [
+              "compact",
+              "regular"
+            ],
+            "default": "regular"
+          },
+          "divider": {
+            "type": "boolean",
+            "description": "Draw a hairline under the bar."
+          }
+        },
+        "required": [
+          "columns"
+        ]
+      }
+    },
+    {
+      "id": "logo",
+      "label": "Logo",
+      "category": "chrome",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "object",
+            "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+            "properties": {
+              "src": {
+                "type": "string",
+                "description": "Public image URL from the media library."
+              },
+              "alt": {
+                "type": "string",
+                "description": "Descriptive alternative text. Required for anything not decorative."
+              },
+              "width": {
+                "type": "integer",
+                "description": "Intrinsic width in pixels."
+              },
+              "height": {
+                "type": "integer",
+                "description": "Intrinsic height in pixels."
+              }
+            },
+            "required": [
+              "src",
+              "alt"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Shown when there is no logo image. Defaults to the business name."
+          },
+          "url": {
+            "type": "string",
+            "description": "Where the logo links.",
+            "default": "/"
+          },
+          "height": {
+            "type": "integer",
+            "description": "Rendered height in pixels.",
+            "minimum": 16,
+            "maximum": 120,
+            "default": 34
+          }
+        }
+      }
+    },
+    {
+      "id": "menu",
+      "label": "Menu",
+      "category": "chrome",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Which menu to show. Use a location id (primary, mobile, footer, legal, utility) so the menu can be swapped from the Menus screen, or a menu id to pin one specific menu."
+          },
+          "layout": {
+            "type": "string",
+            "description": "Direction.",
+            "enum": [
+              "horizontal",
+              "vertical"
+            ],
+            "default": "horizontal"
+          },
+          "collapseOnMobile": {
+            "type": "boolean",
+            "description": "Collapse behind a menu button on small screens."
+          },
+          "align": {
+            "type": "string",
+            "description": "Alignment within its cell.",
+            "enum": [
+              "start",
+              "center",
+              "end"
+            ],
+            "default": "start"
+          }
+        },
+        "required": [
+          "location"
         ]
       }
     },

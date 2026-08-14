@@ -112,6 +112,10 @@ const renderCtx = {
   businessName: config.name,
   forms,
   buttons,
+  menus,
+  // Menu items point at a page by slug rather than by address, so the manifest
+  // has to be in context for a link to resolve.
+  pages,
   warn,
 };
 
@@ -126,11 +130,14 @@ const renderCtx = {
 function renderSlot(slot, templateId) {
   const path = join(SITE, 'templates', `${templateId}.json`);
   if (existsSync(path)) {
-    const template = readJson(path);
-    return injectMenus(renderPage(template, renderCtx), menus, { warn, ...renderCtx });
+    // A template is a block list, so the header is rendered by the same code the
+    // page is — and edited in the same canvas.
+    return injectMenus(renderPage(readJson(path), renderCtx), menus, renderCtx);
   }
-  if (slot === 'header') return injectMenus(readText(join(SITE, 'chrome', 'header.html')), menus, renderCtx);
-  if (slot === 'footer') return injectMenus(readText(join(SITE, 'chrome', 'footer.html')), menus, renderCtx);
+  // Repos provisioned before templates existed still carry hand-written chrome.
+  // They keep working; the first edit in the editor writes a template instead.
+  const legacy = join(SITE, 'chrome', `${slot}.html`);
+  if (existsSync(legacy)) return injectMenus(readText(legacy), menus, renderCtx);
   return '';
 }
 
@@ -142,12 +149,8 @@ function chromeFor(resolved) {
       if (resolved[slot].conflict) warn(`${slot}: ${resolved[slot].conflict}`);
     }
     chromeCache.set(key, {
-      header: [renderSlot('utilityNav', resolved.utilityNav.templateId), renderSlot('header', resolved.header.templateId)]
-        .filter(Boolean)
-        .join('\n'),
-      footer: [renderSlot('footer', resolved.footer.templateId), renderSlot('siteFooter', resolved.siteFooter.templateId)]
-        .filter(Boolean)
-        .join('\n'),
+      header: renderSlot('header', resolved.header.templateId),
+      footer: renderSlot('footer', resolved.footer.templateId),
     });
   }
   return chromeCache.get(key);

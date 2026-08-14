@@ -3,6 +3,56 @@
 // compilation rules live — the dashboard canvas imports the same function, so
 // preview and production cannot drift.
 
+/**
+ * The token set a site starts with.
+ *
+ * It exists so the design system screen is never empty. A dealer whose repo has
+ * no `site/tokens.json` — a repo provisioned before the design system existed,
+ * or one whose file was deleted — still gets a full, editable set to work from,
+ * and saving writes the file. "This site has no tokens.json yet, go and sync"
+ * is not an answer to give someone who opened the screen to change a colour.
+ *
+ * These values are deliberately neutral rather than branded: the first thing a
+ * dealer does is replace them.
+ */
+export const DEFAULT_TOKENS = {
+  version: 2,
+  fonts: { heading: 'Plus Jakarta Sans', body: 'Plus Jakarta Sans', files: [] },
+  colors: {
+    accent: '#d99038',
+    accentDark: '#b8762a',
+    ink: '#111c3a',
+    inkDark: '#0a1226',
+    muted: '#7c86a2',
+    line: '#dde3ee',
+    card: '#ffffff',
+    paper: '#f4f6fb',
+  },
+  status: { ok: '#3a6b4a', info: '#3a5ea8', warn: '#b5761f', bad: '#b03a32' },
+  type: { h1: 48, h2: 34, h3: 24, body: 16, small: 14, eyebrow: 12 },
+  spacing: { 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32, 7: 48 },
+  radius: { nav: 6, input: 8, card: 10, modal: 14, chip: 999 },
+  layout: { container: '1160px' },
+};
+
+/**
+ * Fill in whatever a token file is missing.
+ *
+ * A file written by an older editor will not have every group, and a half-filled
+ * token set compiles to CSS with `undefined` in it — which is invisible until a
+ * page renders with no spacing at all. Merging against the defaults makes a
+ * partial file safe.
+ */
+export function withDefaults(tokens) {
+  const base = DEFAULT_TOKENS;
+  if (!tokens || typeof tokens !== 'object') return { ...base };
+  const merged = { ...base, ...tokens };
+  for (const group of ['fonts', 'colors', 'status', 'type', 'spacing', 'radius', 'layout']) {
+    merged[group] = { ...base[group], ...(tokens[group] || {}) };
+  }
+  return merged;
+}
+
 const px = (n) => `${n}px`;
 const rem = (n) => `${(Number(n) / 16).toFixed(4).replace(/\.?0+$/, '')}rem`;
 
@@ -70,7 +120,8 @@ const DECLARATIONS = {
  * `--primary`, `--bg`, `--surface`, `--border` and `--radius-full`, and removing
  * them silently restyles every published site.
  */
-export function compileTokens(t) {
+export function compileTokens(input) {
+  const t = withDefaults(input);
   const c = t.colors,
     s = t.status,
     ty = t.type,
@@ -162,7 +213,8 @@ export function compileTokenScope(scope, override, base) {
 }
 
 /** Google Fonts href for the token set's heading + body families. */
-export function fontsHref(tokens) {
+export function fontsHref(input) {
+  const tokens = withDefaults(input);
   const fams = [...new Set([tokens.fonts.heading, tokens.fonts.body])]
     .map((f) => encodeURIComponent(f).replace(/%20/g, '+') + ':wght@400;600;700;800')
     .join('&family=');

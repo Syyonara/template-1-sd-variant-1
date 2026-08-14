@@ -9,7 +9,9 @@ import {
   injectMenus,
   renderForm,
   renderPage,
+  renderMenu,
   resolveTemplates,
+  SLOTS,
   validatePage,
 } from './index.mjs';
 
@@ -19,6 +21,8 @@ import menus from '../site/menus.json' with { type: 'json' };
 const CTX = {
   storefrontPrefix: 'store',
   businessName: 'Test Dealer',
+  menus,
+  pages: [{ slug: 'about', path: '/about', title: 'About', status: 'published' }],
   buttons: {
     'get-quote': { id: 'get-quote', label: 'Get a quote', url: '/quote', style: 'primary', intent: 'get-quote' },
   },
@@ -94,6 +98,14 @@ const EXAMPLES = {
   logoStrip: { logos: [{ name: 'Dexter', url: '/brands/dexter' }] },
   locationsMap: { heading: 'Where', locations: [{ city: 'Red Deer', url: '/locations/red-deer' }] },
   footer: { tagline: 'Trailers', columns: [{ heading: 'Shop', links: [{ label: 'Parts', url: '/parts' }] }] },
+  logo: { text: 'Test Dealer', url: '/' },
+  menu: { location: 'primary' },
+  bar: {
+    columns: [
+      [{ id: 'bar-logo', type: 'logo', props: { text: 'Test Dealer' } }],
+      [{ id: 'bar-menu', type: 'menu', props: { location: 'primary' } }],
+    ],
+  },
 };
 
 test('every registered block has an example and renders from it', () => {
@@ -245,16 +257,48 @@ test('a widget carries its config for hydration and its snapshot in the markup',
 
 /* ------------------------------------------------------------------ menus */
 
-test('injectMenus replaces markers and never hand-writes nav into chrome', () => {
-  const html = injectMenus('<nav><!-- menu:desktop-main --></nav>', menus, {});
-  assert.ok(html.includes('data-bz-menu-item="desktop-main"'));
+test('injectMenus replaces markers with whatever is assigned to that location', () => {
+  const html = injectMenus('<nav><!-- menu:primary --></nav>', menus, {});
+  assert.ok(html.includes('data-bz-menu-item="primary"'));
   assert.ok(!html.includes('<!-- menu:'));
 });
 
-test('an unknown menu location warns rather than rendering an empty nav silently', () => {
+test('a location with no menu assigned renders nothing and does not warn', () => {
+  // An unassigned location is a normal state during setup. Warning on it would
+  // train people to ignore the warnings that do matter.
   const warnings = [];
-  injectMenus('<!-- menu:nope -->', menus, { warn: (m) => warnings.push(m) });
-  assert.match(warnings.join(' '), /no location "nope"/);
+  const html = injectMenus('<!-- menu:nope -->', menus, { warn: (m) => warnings.push(m) });
+  assert.equal(html.trim(), '');
+  assert.deepEqual(warnings, []);
+});
+
+test('a v1 menus file still renders, as one menu per old location', () => {
+  const v1 = {
+    'desktop-main': { label: 'Desktop main', items: [{ label: 'Home', href: '/' }] },
+  };
+  const html = renderMenu(v1, 'primary', {});
+  assert.ok(html.includes('>Home</a>'), 'v1 desktop-main did not map onto primary');
+});
+
+test('a page item follows the page, so renaming its address does not orphan the link', () => {
+  const v2 = {
+    version: 2,
+    menus: { main: { id: 'main', name: 'Main', items: [{ id: 'a', label: 'About', type: 'page', ref: 'about' }] } },
+    locations: { primary: 'main' },
+  };
+  const html = renderMenu(v2, 'primary', { pages: [{ slug: 'about', path: '/company', title: 'About', status: 'published' }] });
+  assert.ok(html.includes('href="/company"'));
+});
+
+test('a menu item pointing at a deleted page warns instead of linking nowhere', () => {
+  const warnings = [];
+  const v2 = {
+    version: 2,
+    menus: { main: { id: 'main', name: 'Main', items: [{ id: 'a', label: 'Gone', type: 'page', ref: 'gone' }] } },
+    locations: { primary: 'main' },
+  };
+  renderMenu(v2, 'primary', { pages: [], warn: (m) => warnings.push(m) });
+  assert.match(warnings.join(' '), /no longer exists/);
 });
 
 /* -------------------------------------------------------------- validation */
@@ -359,7 +403,7 @@ test('resolution order is page override, then condition, then channel default', 
   // A route pattern is more specific than a page group, so it wins outright.
   const byRoute = resolveTemplates({ route: '/brands/kenworth', kind: 'page', group: 'brand' }, null, assignments);
   assert.equal(byRoute.header.templateId, 'header--exact');
-  assert.match(byRoute.header.ruleLabel, /route pattern/);
+  assert.match(byRoute.header.ruleLabel, /pages matching/);
 
   const byPage = resolveTemplates(
     { route: '/brands/kenworth', kind: 'page', group: 'brand' },
@@ -384,5 +428,11 @@ test('two equally specific rules are reported as a conflict, never silently pick
 test('a slot with no rule at all still resolves — chrome is never missing', () => {
   const resolved = resolveTemplates({ route: '/a', kind: 'page' }, null, {});
   assert.equal(resolved.header.templateId, 'header--default');
-  assert.equal(resolved.header.rule, 'rendererDefault');
+  assert.equal(resolved.header.rule, 'starter');
+});
+
+test('there are two site parts, not four', () => {
+  // utilityNav and siteFooter were slots; they are rows inside a header or footer
+  // template now, which is what lets a dealer put a utility bar below the nav.
+  assert.deepEqual(SLOTS, ['header', 'footer']);
 });
