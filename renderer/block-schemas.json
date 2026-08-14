@@ -1,0 +1,1240 @@
+{
+  "rendererVersion": "2.0.0",
+  "tokenGroups": {
+    "colors": [
+      "accent",
+      "accentDark",
+      "ink",
+      "inkDark",
+      "muted",
+      "line",
+      "card",
+      "paper"
+    ],
+    "status": [
+      "ok",
+      "info",
+      "warn",
+      "bad"
+    ],
+    "type": [
+      "h1",
+      "h2",
+      "h3",
+      "body",
+      "small",
+      "eyebrow"
+    ],
+    "spacing": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "radius": [
+      "nav",
+      "input",
+      "card",
+      "modal",
+      "chip"
+    ],
+    "fonts": [
+      "heading",
+      "body"
+    ],
+    "layout": [
+      "container"
+    ]
+  },
+  "menuLocations": [
+    "desktop-main",
+    "mobile-main",
+    "desktop-footer",
+    "mobile-footer"
+  ],
+  "templateSlots": [
+    "utilityNav",
+    "header",
+    "footer",
+    "siteFooter"
+  ],
+  "staticWidgets": [
+    "locations-map",
+    "staff",
+    "faq",
+    "phone-numbers",
+    "hours",
+    "inventory-carousel",
+    "inventory-search",
+    "form"
+  ],
+  "blocks": [
+    {
+      "id": "row",
+      "label": "Columns",
+      "category": "layout",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "array",
+            "description": "Two or three columns, each a list of content blocks. Columns never nest, and a section block is never placed inside one — sections are always full-width and top-level.",
+            "minItems": 2,
+            "maxItems": 3,
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/contentBlock"
+              }
+            }
+          },
+          "align": {
+            "type": "string",
+            "description": "Vertical alignment of the columns.",
+            "enum": [
+              "start",
+              "center"
+            ],
+            "default": "start"
+          }
+        },
+        "required": [
+          "columns"
+        ]
+      }
+    },
+    {
+      "id": "spacer",
+      "label": "Spacer",
+      "category": "layout",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "integer",
+            "description": "Step on the spacing scale.",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "divider",
+      "label": "Divider",
+      "category": "layout",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "id": "heading",
+      "label": "Heading",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The heading text."
+          },
+          "eyebrow": {
+            "type": "string",
+            "description": "Small label above the heading."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "align": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center"
+            ],
+            "default": "left"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "text",
+      "label": "Text",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Body copy. Plain paragraphs separated by a blank line; inline <strong>, <em> and <a> are allowed."
+          },
+          "align": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center"
+            ],
+            "default": "left"
+          },
+          "width": {
+            "type": "string",
+            "description": "Measure.",
+            "enum": [
+              "prose",
+              "full"
+            ],
+            "default": "prose"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "image",
+      "label": "Image",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "object",
+            "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+            "properties": {
+              "src": {
+                "type": "string",
+                "description": "Public image URL from the media library."
+              },
+              "alt": {
+                "type": "string",
+                "description": "Descriptive alternative text. Required for anything not decorative."
+              },
+              "width": {
+                "type": "integer",
+                "description": "Intrinsic width in pixels."
+              },
+              "height": {
+                "type": "integer",
+                "description": "Intrinsic height in pixels."
+              }
+            },
+            "required": [
+              "src",
+              "alt"
+            ]
+          },
+          "caption": {
+            "type": "string",
+            "description": "Optional caption shown under the image."
+          },
+          "width": {
+            "type": "string",
+            "description": "How wide the image sits.",
+            "enum": [
+              "prose",
+              "full"
+            ],
+            "default": "full"
+          }
+        },
+        "required": [
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "buttons",
+      "label": "Buttons",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Calls to action, in order.",
+            "items": {
+              "type": "object",
+              "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+              "properties": {
+                "ctaId": {
+                  "type": "string",
+                  "description": "Id of an entry in site/buttons.json."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Inline label. Overrides the library label when both are set."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Inline destination. Overrides the library destination."
+                },
+                "style": {
+                  "type": "string",
+                  "description": "Visual variant.",
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "link"
+                  ]
+                },
+                "intent": {
+                  "type": "string",
+                  "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+                }
+              }
+            },
+            "maxItems": 3
+          },
+          "align": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center"
+            ],
+            "default": "left"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "list",
+      "label": "Feature list",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Optional heading above the list."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "columns": {
+            "type": "integer",
+            "description": "Columns at desktop width.",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 3
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Item title."
+                },
+                "desc": {
+                  "type": "string",
+                  "description": "One or two supporting sentences."
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "customHtml",
+      "label": "Custom HTML",
+      "category": "content",
+      "autoTagged": false,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "html": {
+            "type": "string",
+            "description": "Raw HTML fragment. No <script>, no document shell."
+          }
+        },
+        "required": [
+          "html"
+        ]
+      }
+    },
+    {
+      "id": "form",
+      "label": "Form",
+      "category": "content",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "formId": {
+            "type": "string",
+            "description": "Id of a form in the dealer's Forms library (site/forms/<id>.json). Never invent form fields inline — reference a library form so routing, consent and validation stay in one place."
+          },
+          "heading": {
+            "type": "string",
+            "description": "Optional heading above the form."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "intro": {
+            "type": "string",
+            "description": "One short line under the heading."
+          }
+        },
+        "required": [
+          "formId"
+        ]
+      }
+    },
+    {
+      "id": "widget",
+      "label": "Widget",
+      "category": "widget",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "widget": {
+            "type": "string",
+            "description": "Widget id from the platform registry, e.g. \"locations-map\"."
+          },
+          "config": {
+            "type": "object",
+            "description": "Widget props, validated against that widget's own schema."
+          }
+        },
+        "required": [
+          "widget"
+        ]
+      }
+    },
+    {
+      "id": "hero",
+      "label": "Hero (full-bleed)",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "eyebrow": {
+            "type": "string",
+            "description": "Small label above the headline."
+          },
+          "headline": {
+            "type": "string",
+            "description": "The page promise, one line."
+          },
+          "subhead": {
+            "type": "string",
+            "description": "Two sentences at most."
+          },
+          "ctas": {
+            "type": "array",
+            "description": "Calls to action, in order.",
+            "items": {
+              "type": "object",
+              "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+              "properties": {
+                "ctaId": {
+                  "type": "string",
+                  "description": "Id of an entry in site/buttons.json."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Inline label. Overrides the library label when both are set."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Inline destination. Overrides the library destination."
+                },
+                "style": {
+                  "type": "string",
+                  "description": "Visual variant.",
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "link"
+                  ]
+                },
+                "intent": {
+                  "type": "string",
+                  "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+                }
+              }
+            },
+            "maxItems": 3
+          },
+          "image": {
+            "type": "object",
+            "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+            "properties": {
+              "src": {
+                "type": "string",
+                "description": "Public image URL from the media library."
+              },
+              "alt": {
+                "type": "string",
+                "description": "Descriptive alternative text. Required for anything not decorative."
+              },
+              "width": {
+                "type": "integer",
+                "description": "Intrinsic width in pixels."
+              },
+              "height": {
+                "type": "integer",
+                "description": "Intrinsic height in pixels."
+              }
+            },
+            "required": [
+              "src",
+              "alt"
+            ]
+          },
+          "showSearch": {
+            "type": "boolean",
+            "description": "Show the inventory search bar."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          }
+        },
+        "required": [
+          "headline"
+        ]
+      }
+    },
+    {
+      "id": "splitHero",
+      "label": "Split hero (photo)",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "badge": {
+            "type": "string",
+            "description": "Short credibility line, e.g. \"Manufacturer-direct since 1987\"."
+          },
+          "headline": {
+            "type": "string",
+            "description": "The page promise, one line."
+          },
+          "subhead": {
+            "type": "string",
+            "description": "Two sentences at most."
+          },
+          "ctas": {
+            "type": "array",
+            "description": "Calls to action, in order.",
+            "items": {
+              "type": "object",
+              "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+              "properties": {
+                "ctaId": {
+                  "type": "string",
+                  "description": "Id of an entry in site/buttons.json."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Inline label. Overrides the library label when both are set."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Inline destination. Overrides the library destination."
+                },
+                "style": {
+                  "type": "string",
+                  "description": "Visual variant.",
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "link"
+                  ]
+                },
+                "intent": {
+                  "type": "string",
+                  "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+                }
+              }
+            },
+            "maxItems": 3
+          },
+          "stats": {
+            "type": "array",
+            "description": "Short proof points. Keep values terse — \"39 yrs\", \"12k+\".",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "description": "The figure."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "What it counts."
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
+          "image": {
+            "type": "object",
+            "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+            "properties": {
+              "src": {
+                "type": "string",
+                "description": "Public image URL from the media library."
+              },
+              "alt": {
+                "type": "string",
+                "description": "Descriptive alternative text. Required for anything not decorative."
+              },
+              "width": {
+                "type": "integer",
+                "description": "Intrinsic width in pixels."
+              },
+              "height": {
+                "type": "integer",
+                "description": "Intrinsic height in pixels."
+              }
+            },
+            "required": [
+              "src",
+              "alt"
+            ]
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          }
+        },
+        "required": [
+          "headline"
+        ]
+      }
+    },
+    {
+      "id": "iconGrid",
+      "label": "Quick links",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Optional heading."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Shortcut title."
+                },
+                "desc": {
+                  "type": "string",
+                  "description": "One sentence."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Destination."
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "categoryGrid",
+      "label": "Category grid",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Optional heading."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "cta": {
+            "type": "object",
+            "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+            "properties": {
+              "ctaId": {
+                "type": "string",
+                "description": "Id of an entry in site/buttons.json."
+              },
+              "label": {
+                "type": "string",
+                "description": "Inline label. Overrides the library label when both are set."
+              },
+              "url": {
+                "type": "string",
+                "description": "Inline destination. Overrides the library destination."
+              },
+              "style": {
+                "type": "string",
+                "description": "Visual variant.",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "link"
+                ]
+              },
+              "intent": {
+                "type": "string",
+                "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Card title."
+                },
+                "meta": {
+                  "type": "string",
+                  "description": "Second line, e.g. \"New · $24,900\"."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Destination."
+                },
+                "image": {
+                  "type": "object",
+                  "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+                  "properties": {
+                    "src": {
+                      "type": "string",
+                      "description": "Public image URL from the media library."
+                    },
+                    "alt": {
+                      "type": "string",
+                      "description": "Descriptive alternative text. Required for anything not decorative."
+                    },
+                    "width": {
+                      "type": "integer",
+                      "description": "Intrinsic width in pixels."
+                    },
+                    "height": {
+                      "type": "integer",
+                      "description": "Intrinsic height in pixels."
+                    }
+                  },
+                  "required": [
+                    "src",
+                    "alt"
+                  ]
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "statBand",
+      "label": "Stat band",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "The claim."
+          },
+          "body": {
+            "type": "string",
+            "description": "Two sentences supporting it."
+          },
+          "ctas": {
+            "type": "array",
+            "description": "Calls to action, in order.",
+            "items": {
+              "type": "object",
+              "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+              "properties": {
+                "ctaId": {
+                  "type": "string",
+                  "description": "Id of an entry in site/buttons.json."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Inline label. Overrides the library label when both are set."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Inline destination. Overrides the library destination."
+                },
+                "style": {
+                  "type": "string",
+                  "description": "Visual variant.",
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "link"
+                  ]
+                },
+                "intent": {
+                  "type": "string",
+                  "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+                }
+              }
+            },
+            "maxItems": 3
+          },
+          "stats": {
+            "type": "array",
+            "description": "Short proof points. Keep values terse — \"39 yrs\", \"12k+\".",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "description": "The figure."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "What it counts."
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          }
+        },
+        "required": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "serviceGrid",
+      "label": "Service grid",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Section heading."
+          },
+          "body": {
+            "type": "string",
+            "description": "One or two sentences."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Service name."
+                },
+                "desc": {
+                  "type": "string",
+                  "description": "What it covers."
+                },
+                "cta": {
+                  "type": "object",
+                  "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+                  "properties": {
+                    "ctaId": {
+                      "type": "string",
+                      "description": "Id of an entry in site/buttons.json."
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Inline label. Overrides the library label when both are set."
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Inline destination. Overrides the library destination."
+                    },
+                    "style": {
+                      "type": "string",
+                      "description": "Visual variant.",
+                      "enum": [
+                        "primary",
+                        "secondary",
+                        "link"
+                      ]
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+                    }
+                  }
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "label": "Testimonials",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Section heading."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "quote": {
+                  "type": "string",
+                  "description": "The customer's words. Never fabricate a review."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Who said it."
+                },
+                "role": {
+                  "type": "string",
+                  "description": "Their context, e.g. \"Owner-operator\"."
+                },
+                "rating": {
+                  "type": "integer",
+                  "description": "Stars out of five.",
+                  "minimum": 1,
+                  "maximum": 5
+                }
+              },
+              "required": [
+                "quote",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    },
+    {
+      "id": "logoStrip",
+      "label": "Logo strip",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Optional label, e.g. \"Brands we carry\"."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "logos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Brand name."
+                },
+                "image": {
+                  "type": "object",
+                  "description": "An uploaded image, referenced by public URL. Never a base64 data URI.",
+                  "properties": {
+                    "src": {
+                      "type": "string",
+                      "description": "Public image URL from the media library."
+                    },
+                    "alt": {
+                      "type": "string",
+                      "description": "Descriptive alternative text. Required for anything not decorative."
+                    },
+                    "width": {
+                      "type": "integer",
+                      "description": "Intrinsic width in pixels."
+                    },
+                    "height": {
+                      "type": "integer",
+                      "description": "Intrinsic height in pixels."
+                    }
+                  },
+                  "required": [
+                    "src",
+                    "alt"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Brand page."
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "logos"
+        ]
+      }
+    },
+    {
+      "id": "locationsMap",
+      "label": "Locations + map",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Section heading."
+          },
+          "mapHeading": {
+            "type": "string",
+            "description": "Heading over the map column."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "useLiveLocations": {
+            "type": "boolean",
+            "description": "Pull locations from the dealer's Locations module instead of the list below. Prefer this — a hand-typed list goes stale the day a location is added."
+          },
+          "locations": {
+            "type": "array",
+            "description": "Only used when useLiveLocations is false.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string",
+                  "description": "City and region."
+                },
+                "services": {
+                  "type": "string",
+                  "description": "What the site offers, e.g. \"Sales · Service · Parts\"."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Location page."
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          },
+          "testimonial": {
+            "type": "object",
+            "properties": {
+              "quote": {
+                "type": "string",
+                "description": "Quote."
+              },
+              "name": {
+                "type": "string",
+                "description": "Name."
+              },
+              "role": {
+                "type": "string",
+                "description": "Role."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "footer",
+      "label": "Storefront footer",
+      "category": "section",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "tagline": {
+            "type": "string",
+            "description": "One line about the business."
+          },
+          "legal": {
+            "type": "string",
+            "description": "Copyright / legal line."
+          },
+          "columns": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "heading": {
+                  "type": "string",
+                  "description": "Column heading."
+                },
+                "links": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "description": "Link text."
+                      },
+                      "url": {
+                        "type": "string",
+                        "description": "Destination."
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "url"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "heading",
+                "links"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,12 +1,14 @@
-# Dealer Site Template — v2
+# Dealer Site Template — v3
 
 The GitHub template every dealer's brand site is generated from. Framework-free: no
-Astro, no Tailwind build, no dependencies. The site is authored in the dashboard's
-Website editor, exported as HTML/CSS/JS, committed here, and served static on Vercel.
-`/store/*` is rewritten to the Remix storefront.
+Astro, no Tailwind build, no dependencies. Pages are composed from a block library in
+the dashboard's Website editor, stored here as JSON, and rendered to static HTML on
+Vercel. `/store/*` is rewritten to the Remix storefront.
 
 ```bash
-npm run build      # node scripts/build.mjs -> dist/   (zero dependencies)
+npm run build      # node scripts/build.mjs      -> dist/   (zero dependencies)
+npm test           # node --test renderer/…      the renderer's own specs
+npm run schemas    # regenerate renderer/block-schemas.json
 ```
 
 ## Layout
@@ -14,20 +16,37 @@ npm run build      # node scripts/build.mjs -> dist/   (zero dependencies)
 ```
 dealer.config.json      Identity, business facts, SEO defaults, analytics loader
 vercel.json             /store rewrite + partials cache + security headers  [platform-owned]
-ai/                     THE AI CONTRACT — how the AI builds any design within the rules
-  build-instructions.md   Master contract (provider-neutral)
-  design-system.md        Token keys, editable values, usage rules
-  global-elements.md      Header / menus / footer + the /store handoff
-  seo.md                  Per-page SEO floor + structured data
-  aio.md                  Answer-engine optimisation (llms.txt, schema, semantic facts)
+renderer/               THE RENDERER — the single source of truth for site output  [platform-owned]
+  index.mjs               Public API
+  tokens.mjs              tokens.json -> CSS custom properties (+ scoped brand overrides)
+  blocks.mjs              The block library: renderer + JSON Schema per block
+  page.mjs                Block list -> HTML
+  ops.mjs                 Patch operations (the AI's reply shape) applied to a page
+  validate.mjs            Page JSON validated against the block schemas
+  forms.mjs               Form definitions -> accessible markup
+  widgets.mjs             Widget placeholders + hydration hooks
+  menus.mjs shell.mjs templates.mjs
+  blocks.css              Public component styles, token-driven
+  client/widgets.js       Hydration + form logic + submit (zero-dep, ships to dist/)
+  block-schemas.json      Generated catalogue, consumed by the plugin and dashboard
+ai/                     THE AI CONTRACT                                    [platform-owned]
+  SKILL.md                The operative contract for block pages
+  README.md               Which contract applies to which page format
+  build-instructions.md   Legacy freeform-HTML contract (body.html pages)
+  design-system.md seo.md aio.md global-elements.md
 site/
   tokens.json           DESIGN SYSTEM — colors, status, type, spacing, radius, fonts
+  tokens/<scope>.json   Per-brand scoped overrides (may only set existing keys)
   menus.json            Four menu locations; injected into the chrome at build
+  buttons.json          CTA library — label, destination, style, tagging intent
+  forms/<id>.json       Form library — fields, logic, consent, notification routing
+  templates/<slot>--<name>.json   Header / footer / utility-nav templates, as block lists
+  assignments.json      Which template each slot resolves to, per display condition
   pages.json            Page manifest: path, status, seo, per-page template overrides
   reset.css             Minimal global reset
   chrome/               header.html, footer.html, chrome.css, chrome.js  [shared]
-  pages/<dir>/          body.html + style.css + optional script.js
-scripts/build.mjs       Zero-dep assembler                              [platform-owned]
+  pages/<dir>/          page.json (blocks) — or body.html + style.css (legacy)
+scripts/build.mjs       Loads JSON, calls the renderer, writes files      [platform-owned]
 public/                 favicon, og image, static assets (media proper lives in R2)
 ```
 
@@ -101,3 +120,37 @@ export → commit to `draft` → Vercel preview → fast-forward `main` → prod
    It strips `on*` handlers and `<script>` today, which is correct and unchanged.
 5. Dashboard `lib/website/tokens.ts` — compile from `site/tokens.json` instead of
    `dealer.config.json.brand`, mirroring `buildTokensCss` in `scripts/build.mjs`.
+
+---
+
+## Changes from v2 (3.0.0) — the block model
+
+| # | Change | Reason |
+| --- | --- | --- |
+| 1 | `renderer/` added; `build.mjs` reduced to load-JSON → call-renderer → write-files | The dashboard compiled tokens with its own copy of `buildTokensCss`, whose comment said it "mirrors build.mjs exactly". Two copies of a compilation rule is a drift bug with a live dealer site as the blast radius. |
+| 2 | A page is `site/pages/<dir>/page.json` — a block list | While a page body was an opaque HTML blob, template attachment, token propagation and reliable analytics tagging were all impossible. `body.html` is still read when there is no `page.json`, so existing repos build untouched. |
+| 3 | 21 blocks with JSON Schemas, exported to `renderer/block-schemas.json` | One contract for three consumers: the AI generates against it, the editor builds its inspector from it, the save path validates against it. |
+| 4 | Tagging is structural — blocks emit `data-bz-el` / `data-bz-intent` themselves | Browser-tag certification becomes a one-time platform exercise instead of a per-dealer fix-up repeated every time the AI touches a page. `customHtml` is flagged as the one exception, and the build warns on pages containing it. |
+| 5 | `site/buttons.json` and `site/forms/<id>.json` — CTA and form libraries | A page references a CTA or a form by id, so its destination, styling, tagging, validation, consent and lead routing live in one place. A form built inline in page markup routes its leads nowhere. |
+| 6 | `widget` block + `renderer/client/widgets.js` | Locations, hours, staff, phone numbers and live inventory are platform data. The dashboard commits a snapshot so the facts are in the served HTML; the client refreshes them through the same-origin `/store` proxy. The build still needs no credentials. |
+| 7 | `site/templates/` + `site/assignments.json` + `resolveTemplates` | There was no way to attach a header or footer to a page. Resolution reports the winning rule, so "why is this header here" is answerable without reading four files. |
+| 8 | `partials/manifest.json` carries one entry per chrome combination + a route table | Once chrome is conditional, one `header.html` is insufficient: `/store` and a brand page can resolve to different headers. |
+| 9 | `site/tokens/<scope>.json` — scoped brand overrides | The Brand Page Template gives each OEM "its own logo, assets and design system", which one flat `tokens.json` cannot express. A scope restyles within the same cascade and may only set keys that already exist. |
+| 10 | `ai/SKILL.md` — the block-era contract, synced from the plugin | The five `ai/*.md` files were copied into each dealer repo at generation and never updated, so the live contract (`services/ai/contract.ts`) and the repo's copy drifted from day one. |
+
+### The parity rule, restated
+
+The build never re-renders editor output *differently* — it renders it with the same
+code. `scripts/build.mjs` and the dashboard canvas both import `renderer/`, so what the
+dealer sees while editing is what Vercel serves. That property only holds while there is
+one copy of the renderer; do not vendor a second one.
+
+### Propagating renderer changes to existing dealers
+
+A dealer repo is generated from this template **once**. Nothing about GitHub template
+generation updates it afterwards, so a renderer fix would otherwise reach new dealers
+only. The plugin's `SiteRepoService.syncPlatformFiles()` pushes `renderer/`,
+`scripts/`, `ai/` and `vercel.json` from this template into a dealer repo, deliberately
+bypassing the editor's write allowlist the same way provisioning does. Platform-owned
+paths are exactly the paths that sync; `site/`, `public/` and `dealer.config.json` are
+never touched by it.
