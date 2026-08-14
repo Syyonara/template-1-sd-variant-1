@@ -1,7 +1,0 @@
-{
-  "__note": "GrapesJS getProjectData(). SOURCE OF TRUTH for the site. The AI and the (advanced) GrapesJS UI both edit THIS. The files in site/pages, site/chrome and the generated tokens.css are EXPORTS of this document, produced by the dashboard on publish, and are what scripts/build.mjs assembles.",
-  "pages": [ { "id": "home", "name": "Home", "frames": [ { "component": { "type": "wrapper", "components": [] } } ] } ],
-  "symbols": [],
-  "styles": [],
-  "assets": []
-}

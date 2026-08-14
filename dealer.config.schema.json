@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://buzznerd.com/schemas/dealer.config.schema.json",
+  "title": "Dealer site configuration",
+  "description": "Brand token VALUES, business facts, SEO defaults and operational linkage for a dealer's static brand site. All site CONTENT lives in the site/ plain files, never here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "shortName",
+    "channelToken",
+    "domain",
+    "url",
+    "inventoryOrigin",
+    "contractVersion",
+    "brand",
+    "business",
+    "seo"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "shortName": { "type": "string", "minLength": 1 },
+    "channelToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable Vendure channel token. Ties the repo, Vercel project and inventory rewrite together."
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Public host, e.g. <channelToken>.buzznerd.com"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Canonical absolute site URL, e.g. https://<channelToken>.buzznerd.com"
+    },
+    "inventoryOrigin": {
+      "type": "string",
+      "format": "uri",
+      "description": "Internal origin of the Remix inventory micro-site. The /inventory rewrite targets <inventoryOrigin>/<channelToken>/inventory."
+    },
+    "contractVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Version of the ai/*.md rulebook this site was built under."
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Editable brand token VALUES only. Token KEYS are fixed and never added here.",
+      "required": [
+        "primaryColor",
+        "primaryColorDark",
+        "accentColor",
+        "textColor",
+        "logo",
+        "favicon",
+        "fontHeading",
+        "fontBody",
+        "radius",
+        "container"
+      ],
+      "properties": {
+        "primaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+        "primaryColorDark": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+        "accentColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+        "textColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+        "logo": { "type": "string", "minLength": 1 },
+        "favicon": { "type": "string", "minLength": 1 },
+        "fontHeading": { "type": "string", "minLength": 1 },
+        "fontBody": { "type": "string", "minLength": 1 },
+        "radius": { "type": "string", "minLength": 1 },
+        "container": { "type": "string", "minLength": 1 }
+      }
+    },
+    "business": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Business facts. Kept truthful and consistent with visible markup + JSON-LD.",
+      "required": [
+        "type",
+        "legalName",
+        "phone",
+        "email",
+        "streetAddress",
+        "addressLocality",
+        "addressRegion",
+        "postalCode",
+        "addressCountry",
+        "priceRange",
+        "openingHours"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["AutoDealer", "LocalBusiness", "Store", "Organization"]
+        },
+        "legalName": { "type": "string", "minLength": 1 },
+        "phone": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "minLength": 1 },
+        "streetAddress": { "type": "string" },
+        "addressLocality": { "type": "string" },
+        "addressRegion": { "type": "string" },
+        "postalCode": { "type": "string" },
+        "addressCountry": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "priceRange": { "type": "string" },
+        "openingHours": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "seo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "defaultTitle",
+        "titleTemplate",
+        "defaultDescription",
+        "ogImage",
+        "locale",
+        "themeColor"
+      ],
+      "properties": {
+        "defaultTitle": { "type": "string", "minLength": 1 },
+        "titleTemplate": {
+          "type": "string",
+          "description": "Template applied to non-home page titles, e.g. \"%s | Dealer Name\"."
+        },
+        "defaultDescription": { "type": "string", "minLength": 1 },
+        "ogImage": { "type": "string", "minLength": 1 },
+        "locale": { "type": "string", "minLength": 2 },
+        "themeColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" }
+      }
+    }
+  }
+}

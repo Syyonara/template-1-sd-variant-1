@@ -4,8 +4,8 @@
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
-    { "source": "/inventory", "destination": "https://storefront.buzznerd.com/REPLACE_CHANNEL_TOKEN/inventory" },
-    { "source": "/inventory/:path*", "destination": "https://storefront.buzznerd.com/REPLACE_CHANNEL_TOKEN/inventory/:path*" }
+    { "source": "/store", "destination": "REPLACE_STOREFRONT_ORIGIN/store" },
+    { "source": "/store/:path*", "destination": "REPLACE_STOREFRONT_ORIGIN/store/:path*" }
   ],
   "headers": [
     { "source": "/partials/(.*)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" } ] },

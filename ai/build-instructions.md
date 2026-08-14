@@ -17,8 +17,12 @@ part of these instructions: `design-system.md`, `global-elements.md`, `seo.md`,
 
 ## What you produce
 
-The site is stored as a single GrapesJS document (the source of truth). You never
-write files or run a framework. You emit page content:
+The site is stored as **plain per-page files** (`site/pages/<slug>/body.html`,
+`style.css`, optional `script.js`), shared chrome (`site/chrome/*`), and manifests
+(`site/nav.json`, `site/pages.json`, `dealer.config.json`) — these files are the
+source of truth. The GrapesJS editor imports them for editing and exports them back on
+save; its internal `project.json` is a runtime detail of the editor, never the stored
+format. You never run a framework. You emit page content:
 
 - **HTML** — the page body (what lives inside `<main>`).
 - **CSS** — the page's styles, referencing design tokens (never raw brand values).

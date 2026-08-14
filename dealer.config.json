@@ -5,7 +5,7 @@
   "channelToken": "REPLACE_CHANNEL_TOKEN",
   "domain": "REPLACE_CHANNEL_TOKEN.buzznerd.com",
   "url": "https://REPLACE_CHANNEL_TOKEN.buzznerd.com",
-  "storefrontOrigin": "https://storefront.buzznerd.com",
+  "inventoryOrigin": "https://storefront.buzznerd.com",
   "contractVersion": "1.0.0",
   "brand": {
     "primaryColor": "#1a3a5c",
