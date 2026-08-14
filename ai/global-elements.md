@@ -1,61 +1,78 @@
-# Global Elements — Header, Top Nav, Footer, and the Inventory Handoff
+# Global Elements — Header, Menus, Footer, and the Storefront Handoff
 
 Three things are global to a dealer site and are defined **once**, then shared across
-every page: the **header** (containing the **top nav**), and the **footer**. They are
-stored as reusable elements — editing the shared element updates every page at once.
-Never copy chrome into an individual page body.
+every page: the **header**, the **menus** it renders, and the **footer**. Editing the
+shared element updates every page at once. Never copy chrome into a page body.
 
-## Header + top nav
+## Header
 
-- One header, shown on every page, holding the logo, the top nav, and a primary
-  call-to-action (typically "Browse inventory").
-- The top nav links to the dealer's real pages plus **Inventory**. The Inventory
-  link must always point to `/inventory` (see the handoff below).
-- Style the header with tokens. It may be sticky, transparent-on-hero, etc. — design
-  freedom applies, but it stays one shared element.
+- One header, shown on every page: logo, navigation, and a primary call-to-action.
+- The header markup lives in `site/chrome/header.html`. It contains **menu markers**,
+  not links:
+
+  ```html
+  <nav class="topnav" aria-label="Primary" data-bz-menu="desktop-main">
+    <!-- menu:desktop-main -->
+  </nav>
+  ```
+
+  The build replaces each `<!-- menu:<location> -->` marker with links rendered from
+  `site/menus.json`. **Never hand-write nav links into the header.** A menu edit must
+  update every page and the storefront partials at once, and that only works if there
+  is exactly one source.
+
+- Style the header with tokens. It may be sticky, transparent-on-hero, and so on —
+  design freedom applies, but it stays one shared element.
+
+## Menus
+
+`site/menus.json` defines four locations. All four exist on every dealer site:
+
+| Location | Rendered in |
+| --- | --- |
+| `desktop-main` | header, desktop |
+| `mobile-main` | header, mobile disclosure panel |
+| `desktop-footer` | footer, desktop |
+| `mobile-footer` | footer, mobile |
+
+Each item is `{ "label": "...", "href": "..." }`. Keep an Inventory item pointing at
+`/store` in both main menus.
 
 ## Footer
 
-- One footer, shown on every page: brand line, secondary nav, contact, legal/year.
-- Good place for machine-readable business facts that also help AIO (address, phone,
-  hours) — see `aio.md`.
+- One footer on every page: brand line, footer menu, contact, legal and year.
+- A good place for machine-readable business facts that also help AIO (address,
+  phone, hours) — see `aio.md`.
 
-## Editing chrome
+## Chrome behaviour
 
-When the dealer asks to change the header or footer ("add a phone number to the
-header", "make the footer darker"), edit the **shared** header/footer element and
-return it as chrome, not as part of a page. The change then appears on every page,
-including the inventory pages (below).
+`site/chrome/chrome.js` holds the shared chrome's behaviour (mobile nav disclosure,
+footer year). It is platform-owned and also shipped to the storefront. Do not put
+page-specific JavaScript in it.
 
-## The `/inventory` handoff — read this carefully
+## The `/store` handoff — read this carefully
 
-`/inventory` and everything under it (`/inventory/trucks/…`, product pages, cart,
-checkout) is **not** part of this site's content. It is served by the dealer's
-**inventory micro-site**, a separate Remix application, addressed per dealer by the
-Vendure channel token.
+`/store` and everything under it (`/store/trucks/…`, product pages, cart, checkout)
+is **not** part of this site's content. It is served by the dealer's **Remix
+storefront**, addressed per dealer and resolved from the request hostname.
 
 How it fits together:
 
-- The published brand site (static) proxies `/inventory/*` to the Remix app via a
-  rewrite in `vercel.json`. The rewrite embeds the dealer's channel token so Remix
-  knows which dealer it is serving. The visitor's URL stays on the dealer's own
-  domain the whole time.
-- The Remix app reads **this site's exported header and footer** (published to
-  `/partials/header.html`, `/partials/footer.html`, plus `/partials/chrome.css` and
-  `/partials/tokens.css`) and renders the live inventory, product detail, cart, and
-  checkout **in between** that header and footer. So inventory looks like a native
-  part of the site even though a different app renders it.
+- The published brand site (static) proxies `/store/*` to the Remix app via a rewrite
+  in `vercel.json`. The prefix is preserved rather than stripped, because Remix mounts
+  both its routes and its client bundles under it. The visitor's URL stays on the
+  dealer's own domain throughout.
+- The Remix app reads this site's exported chrome from `/partials/` —
+  `header.html`, `footer.html`, `chrome.css`, `chrome.js`, `reset.css`, `tokens.css` —
+  and the routing contract in `/partials/manifest.json`, then renders live inventory
+  **in between** that header and footer.
 
-Your responsibilities as the AI:
+Your responsibilities:
 
-1. **Never create site content under `/inventory/*`.** No page, no fragment, no route
-   there. It is owned by Remix.
-2. **Keep the Inventory nav link at `/inventory`.** That link is the entry point to
-   the handoff.
+1. **Never create site content under `/store/*`.** No page, no fragment, no route.
+2. **Keep an Inventory item pointing at `/store`** in `menus.json`.
 3. **Keep the chrome self-contained and token-driven**, because Remix reuses it
-   verbatim. Don't put page-specific styling in the header/footer that would leak
-   onto inventory pages; chrome CSS should stand on its own.
-4. When a dealer says "add inventory to my site," the answer is already true — the
-   Inventory link and the rewrite do it. You do not build an inventory listing; you
-   make sure the link exists and the header/footer look right, because Remix supplies
-   the rest.
+   verbatim. No page-specific styling in the header or footer — it would leak onto
+   storefront pages.
+4. When a dealer says "add inventory to my site", the answer is already true. Confirm
+   the menu item and the chrome look right; Remix supplies the rest.

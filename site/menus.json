@@ -1,0 +1,35 @@
+{
+  "desktop-main": {
+    "label": "Desktop main",
+    "items": [
+      { "label": "Home", "href": "/" },
+      { "label": "Inventory", "href": "/store" },
+      { "label": "About", "href": "/about" },
+      { "label": "Contact", "href": "/contact" }
+    ]
+  },
+  "mobile-main": {
+    "label": "Mobile main",
+    "items": [
+      { "label": "Home", "href": "/" },
+      { "label": "Inventory", "href": "/store" },
+      { "label": "About", "href": "/about" },
+      { "label": "Contact", "href": "/contact" }
+    ]
+  },
+  "desktop-footer": {
+    "label": "Desktop footer",
+    "items": [
+      { "label": "Inventory", "href": "/store" },
+      { "label": "About", "href": "/about" },
+      { "label": "Contact", "href": "/contact" }
+    ]
+  },
+  "mobile-footer": {
+    "label": "Mobile footer",
+    "items": [
+      { "label": "Inventory", "href": "/store" },
+      { "label": "Contact", "href": "/contact" }
+    ]
+  }
+}

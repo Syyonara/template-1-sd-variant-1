@@ -1,5 +1,0 @@
-[
-  { "label": "Home", "path": "/" },
-  { "label": "Inventory", "path": "/store", "locked": true },
-  { "label": "Blog", "path": "/blog" }
-]

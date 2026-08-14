@@ -1,23 +1,18 @@
 {
   "$schema": "./dealer.config.schema.json",
+  "contractVersion": "2.0.0",
   "name": "BuzzNerd Dealer",
   "shortName": "BuzzNerd",
   "channelToken": "REPLACE_CHANNEL_TOKEN",
   "domain": "REPLACE_CHANNEL_TOKEN.buzznerd.com",
   "url": "https://REPLACE_CHANNEL_TOKEN.buzznerd.com",
-  "inventoryOrigin": "https://storefront.buzznerd.com",
-  "contractVersion": "1.0.0",
-  "brand": {
-    "primaryColor": "#1a3a5c",
-    "primaryColorDark": "#12293f",
-    "accentColor": "#e8a020",
-    "textColor": "#0f172a",
-    "logo": "/logo.svg",
-    "favicon": "/favicon.svg",
-    "fontHeading": "Plus Jakarta Sans",
-    "fontBody": "Plus Jakarta Sans",
-    "radius": "16px",
-    "container": "1160px"
+  "storefrontOrigin": "https://REPLACE_STOREFRONT_ORIGIN",
+  "storefrontPrefix": "store",
+  "logo": "/logo.svg",
+  "favicon": "/favicon.svg",
+  "analytics": {
+    "loaderUrl": null,
+    "loaderVersion": null
   },
   "business": {
     "type": "AutoDealer",
@@ -30,7 +25,7 @@
     "postalCode": "84101",
     "addressCountry": "US",
     "latitude": 40.7608,
-    "longitude": -111.8910,
+    "longitude": -111.891,
     "priceRange": "$$",
     "openingHours": ["Mo-Fr 08:00-18:00", "Sa 09:00-16:00"]
   },
@@ -40,6 +35,6 @@
     "defaultDescription": "New and used trucks, expert service, genuine parts, financing and leasing from a dealer you can trust.",
     "ogImage": "/og-default.jpg",
     "locale": "en_US",
-    "themeColor": "#1a3a5c"
+    "themeColor": "#111c3a"
   }
 }

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 264 68" role="img" aria-label="BuzzNerd Dealer">
-  <rect x="0" y="6" width="56" height="56" rx="14" fill="#1a3a5c"/>
-  <path d="M12 44h32M18 44V28h12l6 8v8" fill="none" stroke="#e8a020" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="72" y="35" font-family="'Plus Jakarta Sans',system-ui,sans-serif" font-size="26" font-weight="800" fill="#1a3a5c">BuzzNerd</text>
-  <text x="72" y="55" font-family="'Plus Jakarta Sans',system-ui,sans-serif" font-size="14" font-weight="600" letter-spacing="1.5" fill="#64748b">DEALER</text>
-</svg>

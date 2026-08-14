@@ -1,11 +1,19 @@
-<header class="site-header">
+<header class="site-header" data-bz-region="header">
   <div class="container header-inner">
-    <a class="brand" href="/"><img src="/logo.svg" alt="BuzzNerd Dealer" width="132" height="34" /></a>
-    <nav class="topnav" aria-label="Primary">
-      <a href="/">Home</a>
-      <a href="/store">Inventory</a>
-      <a href="/blog">Blog</a>
+    <a class="brand" href="/" data-bz-el="logo">
+      <img src="/logo.svg" alt="BuzzNerd Dealer" width="132" height="34" />
+    </a>
+    <nav class="topnav" aria-label="Primary" data-bz-menu="desktop-main">
+      <!-- menu:desktop-main -->
     </nav>
-    <a class="btn btn-primary" href="/store">Browse inventory</a>
+    <a class="btn btn-primary" href="/store" data-bz-el="cta" data-bz-intent="browse-inventory">
+      Browse inventory
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
+  <nav id="mobile-nav" class="mobilenav" aria-label="Mobile" data-bz-menu="mobile-main" hidden>
+    <!-- menu:mobile-main -->
+  </nav>
 </header>

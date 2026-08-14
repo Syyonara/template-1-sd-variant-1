@@ -1,8 +1,9 @@
 {
   "slug": "welcome",
-  "title": "Welcome to our new website",
-  "date": "2026-01-15",
-  "description": "We just launched our new site — here is what you can do here and how to reach us.",
-  "coverImage": "",
-  "body": "<p class=\"lede\">We are excited to launch our new website. Browse our live inventory, learn about our services, and get in touch with our team.</p><h2>What you'll find here</h2><p>Our full lineup of new and used trucks and trailers is available on the <a href=\"/inventory\">Inventory</a> page, updated in real time. Every listing includes pricing, specs, and photos.</p><h2>How to reach us</h2><p>Call, email, or stop by during business hours. We're happy to answer questions about financing, trade-ins, parts, and service.</p>"
+  "title": "Welcome to our new site",
+  "date": "2026-08-01",
+  "description": "A faster site, live inventory, and easier ways to reach the right department.",
+  "coverImage": null,
+  "status": "published",
+  "body": "<p>We have rebuilt our website around live inventory. Every truck, trailer and part you see is what is actually on the lot, updated straight from our system.</p><p>Browse what is in stock, or get in touch and we will help you find the right unit.</p>"
 }
