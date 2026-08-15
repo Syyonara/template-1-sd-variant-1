@@ -154,19 +154,86 @@ What is still yours:
   application. Link to `/store` and to specific listing paths under it; never author a
   page whose path starts with `/store`.
 
-## 6. `customHtml` is the escape hatch, not the tool
+## 6. When nothing in the library fits: create a widget
 
-`customHtml` exists for the one thing the library genuinely cannot express. It is
-flagged in the editor as not automatically tagged, and the build warns on every page
-that contains one, because the platform cannot vouch for analytics or accessibility
-inside markup it did not generate.
+`customHtml` used to be the only answer here, and it is the wrong one for anything a
+site will use more than once — it is opaque to the editor, invisible to the inspector,
+and the next person who wants the same section gets a second copy of the same markup.
 
-Reach for it last. If you find yourself using it for a layout the library nearly
-covers, use the near-miss block and say what is missing in `summary` — that is how the
-library gets better. Never put a `<script>`, a document shell, an inline event handler
-or a tracking pixel inside it; all four are stripped.
+The right answer is a **custom widget**. You author a definition; it is committed to
+the dealer's own repo as `site/widgets/<id>.json`; from that moment it behaves exactly
+like a platform block. It appears in the palette under Design → Widgets, the inspector
+builds itself from your prop list, and it can be placed, edited and reused on any page.
 
-## 7. What you must never do
+Return new definitions alongside your ops, in the same reply:
+
+```json
+{
+  "ops": [ { "op": "add", "block": { "id": "specs", "type": "spec-strip", "props": { … } }, "afterId": "hero" } ],
+  "widgets": [
+    {
+      "id": "spec-strip",
+      "label": "Spec strip",
+      "description": "A row of key specifications with a label and a value.",
+      "category": "content",
+      "props": [
+        { "key": "heading", "type": "text", "label": "Heading", "required": true },
+        { "key": "items", "type": "list", "label": "Specs",
+          "fields": [ { "key": "name", "type": "text", "label": "Name" },
+                      { "key": "value", "type": "text", "label": "Value" } ] }
+      ],
+      "html": "<div class=\"strip\"><h3>{{heading}}</h3><ul>{{#each items}}<li><b>{{name}}</b> {{value}}</li>{{/each}}</ul></div>",
+      "css": ".strip ul{display:flex;gap:var(--space-4);list-style:none;padding:0}"
+    }
+  ],
+  "summary": "Added a spec strip below the hero."
+}
+```
+
+Rules that are enforced, not advisory:
+
+- **`id`** is lower-case letters, digits and dashes. It may not collide with a platform
+  block; if it does, the definition is rejected.
+- **`category`** is `content` (may sit inside a row column) or `section` (full width,
+  top level only).
+- **The template language is fixed.** `{{key}}` interpolates and escapes.
+  `{{&key}}` allows the small inline vocabulary (`<strong>`, `<em>`, `<a>`, `<br>`).
+  `{{#if key}}…{{else}}…{{/if}}`, `{{#unless key}}`, and `{{#each list}}…{{/each}}`
+  with `{{@index}}` and the item's own field names inside. `{{link key}}` writes a
+  prefix-aware href; `{{img key}}` writes a complete `<img>` from an image prop.
+  There is no expression evaluation, and there never will be.
+- **Every prop you interpolate must be declared** in `props`, with a `type` from:
+  `text`, `textarea`, `richtext`, `url`, `image`, `number`, `boolean`, `select`
+  (needs `options`), `color`, `list` (needs `fields`). Anything undeclared renders empty
+  and cannot be edited.
+- **Nesting is opt-in.** Write `<div data-bz-slot="0"></div>` where other blocks may be
+  dropped. Slot contents live in `props.columns[0]`, the same shape `row` uses.
+- **Style through tokens.** Your CSS is automatically scoped to `.bz-block--<id>`, so
+  selectors cannot leak — but a hardcoded hex still breaks the dealer's design system.
+  Use `var(--accent)`, `var(--space-4)`, `var(--radius-card)` and the rest.
+- **Tag your interactive elements.** Platform blocks emit `data-bz-el` and
+  `data-bz-intent` for you; here they are yours. A widget with an untagged link is
+  accepted and flagged in the editor, which means someone has to come back and fix it.
+- **Scripts, iframes, forms, event handlers and `@import` are stripped** on the way in.
+  A widget that needs behaviour is not a widget — say so in `summary`.
+
+Prefer one well-propped widget to three near-identical ones. Before you author a new
+definition, check the custom widgets already listed in the request context: reusing one
+with different props is always better than a second definition that looks the same.
+
+## 7. `customHtml` is the escape hatch, not the tool
+
+`customHtml` exists for the one thing neither the library nor a widget can express — a
+one-off fragment that will never be reused. It is flagged in the editor as not
+automatically tagged, and the build warns on every page that contains one, because the
+platform cannot vouch for analytics or accessibility inside markup it did not generate.
+
+Reach for it last, after a custom widget. If you find yourself using it for a layout the
+library nearly covers, use the near-miss block and say what is missing in `summary` —
+that is how the library gets better. Never put a `<script>`, a document shell, an inline
+event handler or a tracking pixel inside it; all four are stripped.
+
+## 8. What you must never do
 
 - Never return the whole block tree from an edit.
 - Never write `<form>`, `<input>` or a submit button as markup.
@@ -178,5 +245,5 @@ or a tracking pixel inside it; all four are stripped.
 
 ---
 
-*Appended at request time: the block catalogue, the dealer's forms, buttons and
-available widgets, and the dealer's current token values.*
+*Appended at request time: the block catalogue, the dealer's forms, buttons, platform
+widgets and custom widgets, and the dealer's current token values.*

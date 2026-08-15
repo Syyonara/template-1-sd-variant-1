@@ -20,6 +20,7 @@ import {
   DEFAULT_TOKENS,
   MENU_ITEM_TYPES,
   MENU_LOCATIONS,
+  PROP_TYPES,
   SLOTS,
   TOKEN_GROUPS,
 } from '../renderer/index.mjs';
@@ -36,6 +37,10 @@ const catalogue = {
   menuItemTypes: MENU_ITEM_TYPES,
   templateSlots: SLOTS,
   staticWidgets: staticWidgetIds(),
+  // The prop editor types a custom widget definition may declare. The dashboard
+  // builds its widget editor from this and the plugin validates against it, so
+  // adding a type is a one-file change here rather than three in lockstep.
+  customWidgetPropTypes: PROP_TYPES,
   blocks: blockCatalogue(),
 };
 

@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   applyOps,
+  blockCatalogue,
   blockRegistry,
+  clearCustomWidgets,
+  customWidgetCss,
+  customWidgets,
+  parseWidgetDefinition,
+  registerCustomWidgets,
   compileTokens,
   compileTokenScope,
   injectMenus,
@@ -435,4 +441,187 @@ test('there are two site parts, not four', () => {
   // utilityNav and siteFooter were slots; they are rows inside a header or footer
   // template now, which is what lets a dealer put a utility bar below the nav.
   assert.deepEqual(SLOTS, ['header', 'footer']);
+});
+
+/* ------------------------------------------------------------ custom widgets */
+
+const SPEC_STRIP = {
+  id: 'spec-strip',
+  label: 'Spec strip',
+  category: 'content',
+  props: [
+    { key: 'heading', type: 'text', label: 'Heading', required: true },
+    { key: 'note', type: 'richtext', label: 'Note' },
+    {
+      key: 'items',
+      type: 'list',
+      label: 'Specs',
+      fields: [
+        { key: 'name', type: 'text', label: 'Name' },
+        { key: 'value', type: 'text', label: 'Value' },
+      ],
+    },
+  ],
+  html:
+    '<div class="strip"><h3>{{heading}}</h3>{{#if note}}<p class="note">{{&note}}</p>{{/if}}' +
+    '<ul>{{#each items}}<li data-i="{{@index}}"><b>{{name}}</b> {{value}}</li>{{/each}}</ul></div>',
+  css: '.strip{display:flex} .note{color:var(--muted)} @media (max-width:600px){.strip{display:block}}',
+};
+
+test('a custom widget renders as an ordinary block once registered', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  const html = renderPage(
+    {
+      blocks: [
+        {
+          id: 's1',
+          type: 'spec-strip',
+          props: {
+            heading: 'Specs',
+            note: 'Ask about <strong>towing</strong>',
+            items: [{ name: 'GVWR', value: '14k' }],
+          },
+        },
+      ],
+    },
+    CTX,
+  );
+  assert.match(html, /data-bz-block-type="spec-strip"/);
+  assert.match(html, /<h3>Specs<\/h3>/);
+  assert.match(html, /<b>GVWR<\/b> 14k/);
+  assert.match(html, /data-i="0"/);
+  // richtext keeps the inline vocabulary and nothing else
+  assert.match(html, /Ask about <strong>towing<\/strong>/);
+  clearCustomWidgets();
+});
+
+test('interpolation is escaped, and rich text cannot smuggle a script', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  const html = renderPage(
+    {
+      blocks: [
+        {
+          id: 's1',
+          type: 'spec-strip',
+          props: { heading: '<img src=x onerror=alert(1)>', note: '<script>alert(1)</script>ok' },
+        },
+      ],
+    },
+    CTX,
+  );
+  assert.ok(!html.includes('<img src=x'), 'a prop value was interpolated as markup');
+  assert.ok(!html.toLowerCase().includes('<script'), 'rich text let a script through');
+  assert.match(html, /ok/);
+  clearCustomWidgets();
+});
+
+test('a widget definition that declares a slot accepts nested blocks', () => {
+  registerCustomWidgets([
+    {
+      id: 'panel',
+      label: 'Panel',
+      props: [{ key: 'title', type: 'text', label: 'Title' }],
+      html: '<div class="panel"><h4>{{title}}</h4><div class="body" data-bz-slot="0"></div></div>',
+    },
+  ]);
+  const html = renderPage(
+    {
+      blocks: [
+        {
+          id: 'p1',
+          type: 'panel',
+          props: { title: 'Inside', columns: [[{ id: 't1', type: 'text', props: { text: 'Nested copy' } }]] },
+        },
+      ],
+    },
+    CTX,
+  );
+  assert.match(html, /data-bz-slot="0"/);
+  assert.match(html, /Nested copy/);
+  clearCustomWidgets();
+});
+
+test('widget CSS is scoped to the widget, including inside a media query', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  const css = customWidgetCss();
+  assert.match(css, /\.bz-block--spec-strip \.strip\{/);
+  assert.match(css, /@media \(max-width:600px\)\{\.bz-block--spec-strip \.strip\{/);
+  assert.ok(!/^\.strip\{/m.test(css), 'an unscoped selector escaped the widget');
+  clearCustomWidgets();
+});
+
+test('a widget cannot shadow a built-in block', () => {
+  const warnings = [];
+  const ids = registerCustomWidgets([{ id: 'hero', label: 'Fake hero', html: '<p>no</p>' }], (m) =>
+    warnings.push(m),
+  );
+  assert.deepEqual(ids, []);
+  assert.match(warnings.join(' '), /shadows a built-in block/);
+  assert.equal(blockRegistry.hero.label, 'Hero (full-bleed)');
+  clearCustomWidgets();
+});
+
+test('a definition is rejected rather than half-registered', () => {
+  const bad = parseWidgetDefinition({ id: 'Bad Id', html: '' });
+  assert.equal(bad.definition, null);
+  assert.ok(bad.errors.some((e) => e.includes('id')));
+  assert.ok(bad.errors.some((e) => e.includes('html is required')));
+
+  const unbalanced = parseWidgetDefinition({ id: 'unbalanced', html: '<p>{{#if a}}x</p>' });
+  assert.equal(unbalanced.definition, null);
+  assert.match(unbalanced.errors.join(' '), /not closed/);
+});
+
+test('scripts and handlers are stripped when the definition is parsed', () => {
+  const { definition } = parseWidgetDefinition({
+    id: 'clean',
+    html: '<div onclick="steal()"><script>bad()</script><a href="javascript:x">go</a></div>',
+    css: '@import url(http://evil.example/x.css); .a{color:red}',
+  });
+  assert.ok(definition, 'a definition that is safe after stripping should survive');
+  assert.ok(!definition.html.includes('onclick'));
+  assert.ok(!definition.html.toLowerCase().includes('<script'));
+  assert.ok(!definition.html.includes('javascript:'));
+  assert.ok(!definition.css.includes('@import'));
+});
+
+test('a widget schema validates its instances like any other block', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  const bad = validatePage({ blocks: [{ id: 's1', type: 'spec-strip', props: { items: 'not a list' } }] });
+  assert.equal(bad.valid, false);
+  assert.match(bad.message, /heading: is required/);
+  assert.match(bad.message, /expected array/);
+
+  const good = validatePage({
+    blocks: [{ id: 's1', type: 'spec-strip', props: { heading: 'Specs', items: [] } }],
+  });
+  assert.equal(good.valid, true, good.message);
+  clearCustomWidgets();
+});
+
+test('an untagged link in a widget is reported, not blocked', () => {
+  const tagged = parseWidgetDefinition({
+    id: 'tagged',
+    html: '<a href="/x" data-bz-el="cta" data-bz-intent="quote">Go</a>',
+  });
+  assert.equal(tagged.definition.autoTagged, true);
+  const untagged = parseWidgetDefinition({ id: 'untagged', html: '<a href="/x">Go</a>' });
+  assert.equal(untagged.definition.autoTagged, false);
+});
+
+test('registering replaces the previous set rather than merging', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  registerCustomWidgets([{ id: 'other', label: 'Other', html: '<p>x</p>' }]);
+  assert.deepEqual(customWidgets().map((w) => w.id), ['other']);
+  clearCustomWidgets();
+});
+
+test('the catalogue exposes custom widgets under their own category', () => {
+  registerCustomWidgets([SPEC_STRIP]);
+  const entry = blockCatalogue().find((b) => b.id === 'spec-strip');
+  assert.equal(entry.category, 'custom');
+  assert.equal(entry.placement, 'content');
+  assert.equal(entry.custom, true);
+  assert.ok(entry.schema.properties.heading);
+  clearCustomWidgets();
 });

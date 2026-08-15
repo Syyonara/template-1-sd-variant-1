@@ -9,7 +9,7 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
-export const RENDERER_VERSION = '3.0.0';
+export const RENDERER_VERSION = '3.1.0';
 
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export { compileTokens, compileTokenScope, fontsHref, withDefaults, DEFAULT_TOKENS, TOKEN_GROUPS } from './tokens.mjs';
@@ -18,11 +18,33 @@ export {
   blockCatalogue,
   getBlock,
   resolveCta,
+  registerCustomWidgets,
+  clearCustomWidgets,
+  customWidgets,
+  customWidgetCss,
+  contentBlockTypes,
+  sectionBlockTypes,
+  defaultPropsFor,
   CONTENT_BLOCK_TYPES,
   SECTION_BLOCK_TYPES,
   LAYOUT_BLOCK_TYPES,
   CHROME_BLOCK_TYPES,
 } from './blocks.mjs';
+export {
+  parseWidgetDefinition,
+  compileWidget,
+  compileWidgets,
+  compileTemplate,
+  widgetSchema,
+  defaultProps as widgetDefaultProps,
+  scopeCss,
+  stripUnsafeHtml,
+  stripUnsafeCss,
+  countSlots,
+  isAutoTagged,
+  emptyDefinition,
+  PROP_TYPES,
+} from './custom-widgets.mjs';
 export { renderPage, parsePage, walkBlocks, blockIds } from './page.mjs';
 export { renderForm, operatorsForFieldType, FIELD_TYPES } from './forms.mjs';
 export { renderWidget, staticWidgetIds, BEHAVIOUR_ONLY } from './widgets.mjs';

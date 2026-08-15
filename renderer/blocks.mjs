@@ -15,6 +15,7 @@
 //     exactly one h1 no matter which blocks it is assembled from.
 
 import { attrs, cls, esc, heading, href, image, isExternal, join, tagAttrs } from './html.mjs';
+import { compileWidgets } from './custom-widgets.mjs';
 import { renderForm } from './forms.mjs';
 import { renderMenu } from './menus.mjs';
 import { renderWidget } from './widgets.mjs';
@@ -1080,17 +1081,104 @@ export const blockRegistry = Object.fromEntries(
   ]),
 );
 
+/* ------------------------------------------------- custom widget registry */
+
+/**
+ * Widgets the dealer's own repo defines, registered at runtime.
+ *
+ * The built-in library above is fixed at build time; this is not. A dealer site
+ * carries `site/widgets/*.json`, and whoever is rendering — the static build, the
+ * editor canvas — registers them before rendering anything. From that moment they
+ * are ordinary blocks: `getBlock` finds them, the catalogue lists them, the
+ * validator checks them against their generated schema, and `renderPage` renders
+ * them through the same path.
+ *
+ * A module-level map is the right scope for both callers. `build.mjs` is one
+ * process per site, and the dashboard holds one site at a time; `registerCustomWidgets`
+ * replaces the whole set rather than merging, so switching sites cannot leave a
+ * previous dealer's widget registered.
+ */
+const customRegistry = new Map();
+
+/**
+ * Replace the custom widget set. Definitions that do not compile are skipped with
+ * a warning rather than throwing — one bad widget must not take a site's build
+ * down, and the page that uses it degrades to a warning and no output.
+ */
+export function registerCustomWidgets(definitions, warn) {
+  customRegistry.clear();
+  for (const widget of compileWidgets(definitions, warn)) {
+    if (blockRegistry[widget.id]) {
+      if (warn) warn(`Custom widget "${widget.id}" shadows a built-in block and was skipped.`);
+      continue;
+    }
+    customRegistry.set(widget.id, widget);
+  }
+  return [...customRegistry.keys()];
+}
+
+export function clearCustomWidgets() {
+  customRegistry.clear();
+}
+
+/** The compiled custom widgets, in label order. */
+export function customWidgets() {
+  return [...customRegistry.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/**
+ * Every registered custom widget's CSS, already scoped to its own block class.
+ * Emitted once per site rather than per instance.
+ */
+export function customWidgetCss() {
+  return customWidgets()
+    .map((w) => w.css)
+    .filter(Boolean)
+    .join('\n');
+}
+
+/** Starting props for a block type, built-in or custom. */
+export function defaultPropsFor(type) {
+  const custom = customRegistry.get(type);
+  return custom ? JSON.parse(JSON.stringify(custom.defaults)) : {};
+}
+
 export function getBlock(type) {
-  return blockRegistry[type] || null;
+  return blockRegistry[type] || customRegistry.get(type) || null;
+}
+
+/** Content block ids including custom widgets that may sit inside a column. */
+export function contentBlockTypes() {
+  return [...CONTENT_BLOCK_TYPES, ...customWidgets().filter((w) => w.category !== 'section').map((w) => w.id)];
+}
+
+/** Section block ids including custom widgets declared as sections. */
+export function sectionBlockTypes() {
+  return [...SECTION_BLOCK_TYPES, ...customWidgets().filter((w) => w.category === 'section').map((w) => w.id)];
 }
 
 /** Machine-readable catalogue for the AI contract and the editor's inspector. */
 export function blockCatalogue() {
-  return Object.values(blockRegistry).map((b) => ({
+  const builtIn = Object.values(blockRegistry).map((b) => ({
     id: b.id,
     label: b.label,
     category: b.category,
     autoTagged: b.autoTagged,
     schema: b.schema,
   }));
+  const custom = customWidgets().map((w) => ({
+    id: w.id,
+    label: w.label,
+    description: w.description,
+    // Presented under its own category so the palette can group them, while the
+    // renderer still treats `custom` widgets by their real placement category.
+    category: 'custom',
+    placement: w.category,
+    custom: true,
+    origin: w.origin,
+    slots: w.slots,
+    autoTagged: w.autoTagged,
+    schema: w.schema,
+  }));
+  return [...builtIn, ...custom];
 }

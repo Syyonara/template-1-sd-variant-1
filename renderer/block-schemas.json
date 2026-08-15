@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "3.0.0",
+  "rendererVersion": "3.1.0",
   "tokenGroups": {
     "colors": [
       "accent",
@@ -147,6 +147,18 @@
     "inventory-carousel",
     "inventory-search",
     "form"
+  ],
+  "customWidgetPropTypes": [
+    "text",
+    "textarea",
+    "richtext",
+    "url",
+    "image",
+    "number",
+    "boolean",
+    "select",
+    "color",
+    "list"
   ],
   "blocks": [
     {

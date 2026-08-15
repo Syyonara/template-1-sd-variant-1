@@ -43,7 +43,10 @@ function renderOne(block, ctx, depth) {
   if (!def.autoTagged && ctx.warn) {
     // Surfaced so a certification pilot can exclude pages the platform cannot
     // vouch for; not an error, the block is a supported escape hatch.
-    ctx.warn(`Page contains a custom-html block (${block.id || '?'}) — analytics tagging is not automatic.`);
+    ctx.warn(
+      `Page contains a "${block.type}" block (${block.id || '?'}) whose markup is not auto-tagged — ` +
+        'analytics attributes are the author\'s responsibility.',
+    );
   }
 
   const props = isPlainObject(block.props) ? block.props : {};

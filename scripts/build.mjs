@@ -28,6 +28,8 @@ import {
   injectMenus,
   renderPage,
   renderShell,
+  registerCustomWidgets,
+  customWidgetCss,
   resolveTemplates,
   SLOTS,
 } from '../renderer/index.mjs';
@@ -79,6 +81,32 @@ const buttons = (() => {
   const list = Array.isArray(raw) ? raw : raw.buttons || [];
   return Object.fromEntries(list.filter((b) => b && b.id).map((b) => [b.id, b]));
 })();
+
+/* ----------------------------------------------------------- custom widgets */
+// Widgets this site defines for itself, created by the AI when the platform
+// library could not express a design, or saved by the dealer from the canvas.
+// Registering them here — before anything renders — is what makes them ordinary
+// blocks for the rest of the build.
+
+const customWidgetDefs = (() => {
+  const dir = join(SITE, 'widgets');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => {
+      try {
+        const entry = readJson(join(dir, f));
+        return { ...entry, id: entry.id || f.replace(/\.json$/, '') };
+      } catch {
+        warn(`site/widgets/${f} is not valid JSON — skipped.`);
+        return null;
+      }
+    })
+    .filter(Boolean);
+})();
+
+const registeredWidgets = registerCustomWidgets(customWidgetDefs, warn);
+const customCss = customWidgetCss();
 
 /* ------------------------------------------------------------------- tokens */
 
@@ -159,7 +187,11 @@ function chromeFor(resolved) {
 const chromeCss = readText(join(SITE, 'chrome', 'chrome.css'));
 const chromeJs = readText(join(SITE, 'chrome', 'chrome.js'));
 const resetCss = readText(join(SITE, 'reset.css'));
-const blocksCss = readText(join(RENDERER, 'blocks.css'));
+// Custom widget CSS is appended to the platform stylesheet rather than served
+// separately: it is scoped per widget, it is small, and one file means the
+// storefront's partials list does not have to change for a site that defines a
+// widget.
+const blocksCss = readText(join(RENDERER, 'blocks.css')) + (customCss ? `\n${customCss}\n` : '');
 const widgetsJs = readText(join(RENDERER, 'client', 'widgets.js'));
 
 /* ------------------------------------------------------------------ writing */
@@ -431,6 +463,7 @@ if (existsSync(join(ROOT, 'public'))) cpSync(join(ROOT, 'public'), DIST, { recur
 for (const w of warnings) console.warn(`  warn: ${w}`);
 console.log(
   `Built ${emitted.length} page(s) (${indexable.length} indexable), ${Object.keys(forms).length} form(s), ` +
+    `${registeredWidgets.length} custom widget(s), ` +
     `${combos.size} chrome combination(s) + sitemap/robots/llms.txt -> dist/  ` +
     `[prefix: /${PREFIX}, renderer ${RENDERER_VERSION}]`,
 );

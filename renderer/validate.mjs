@@ -6,7 +6,7 @@
 // If a schema starts using a keyword this does not implement, `unsupported` is
 // reported rather than silently passing.
 
-import { getBlock, CONTENT_BLOCK_TYPES, SECTION_BLOCK_TYPES } from './blocks.mjs';
+import { getBlock, contentBlockTypes, sectionBlockTypes } from './blocks.mjs';
 import { parsePage } from './page.mjs';
 
 const KNOWN_KEYWORDS = new Set([
@@ -119,9 +119,9 @@ function checkBlock(block, path, errors, depth) {
   if (!def) {
     errors.push({
       path: `${path}.type`,
-      message: `unknown block type "${block.type}". Sections: ${SECTION_BLOCK_TYPES.join(
+      message: `unknown block type "${block.type}". Sections: ${sectionBlockTypes().join(
         ', ',
-      )}. Content: ${CONTENT_BLOCK_TYPES.join(', ')}.`,
+      )}. Content: ${contentBlockTypes().join(', ')}.`,
     });
     return;
   }
