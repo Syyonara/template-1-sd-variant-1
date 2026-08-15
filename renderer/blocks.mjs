@@ -186,8 +186,12 @@ const BLOCKS = {
     render(props, ctx, block, renderChildren) {
       const columns = Array.isArray(props.columns) ? props.columns.slice(0, 3) : [];
       if (columns.length < 2) return '';
+      // data-bz-slot marks a place children may go. The editor uses it as a drop
+      // target; the published page ignores it. Emitting it in both keeps the
+      // canvas and the build agreeing about where nesting is allowed rather than
+      // the editor guessing.
       const cells = columns.map(
-        (col) => `<div class="bz-col">${renderChildren(col, ctx)}</div>`,
+        (col, i) => `<div class="bz-col" data-bz-slot="${i}">${renderChildren(col, ctx)}</div>`,
       );
       return container(
         `<div class="${cls(`bz-row bz-row--${columns.length}`, props.align === 'center' && 'bz-row--mid')}">${join(
@@ -450,7 +454,9 @@ const BLOCKS = {
     render(props, ctx, block, renderChildren) {
       const columns = Array.isArray(props.columns) ? props.columns.slice(0, 3) : [];
       if (!columns.length) return '';
-      const inner = columns.map((col) => `<div class="bz-bar__cell">${renderChildren(col, ctx)}</div>`);
+      const inner = columns.map(
+        (col, i) => `<div class="bz-bar__cell" data-bz-slot="${i}">${renderChildren(col, ctx)}</div>`,
+      );
       return `<div class="${cls(
         'bz-bar',
         `bz-bar--${props.background || 'card'}`,
