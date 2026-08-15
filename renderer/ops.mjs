@@ -94,6 +94,24 @@ function isDescendant(nodes, ancestorId, candidateId) {
   return found;
 }
 
+/** The chain of ancestor ids above `id`, nearest first. Empty for a top-level node. */
+function ancestorsOf(nodes, id) {
+  const chain = [];
+  const step = (list, trail) => {
+    for (const node of list || []) {
+      if (!isObject(node)) continue;
+      if (node.id === id) {
+        chain.push(...trail);
+        return true;
+      }
+      if (Array.isArray(node.children) && step(node.children, [node.id, ...trail])) return true;
+    }
+    return false;
+  };
+  step(nodes, []);
+  return chain;
+}
+
 /**
  * Apply a list of operations to a document.
  *
@@ -101,17 +119,60 @@ function isDescendant(nodes, ancestorId, candidateId) {
  * does not exist, or one that would nest a row inside a row, is rejected and
  * reported rather than silently dropped: a model that hallucinated an id needs
  * to be told, and a dealer needs to know their edit only half landed.
+ *
+ * `options.scopeId` restricts the batch to the subtree of one node — the same
+ * boundary the server validator enforces on AI replies, applied again here so a
+ * reply that slipped through (or a stale client) still cannot touch anything the
+ * dealer did not select. Destructive ops (update, remove, move, wrap) must name
+ * the scope node or a descendant; insert may also land beside the scope node.
+ * Nodes inserted within this batch count as in scope — they are new, so nothing
+ * the dealer made can be lost through them.
  */
-export function applyOps(raw, ops) {
+export function applyOps(raw, ops, options = {}) {
   const document = parseDocument(clone(raw));
   const applied = [];
   const rejected = [];
   const reject = (op, reason) => rejected.push({ op, reason });
 
+  const scope = options.scopeId && locateNode(document.nodes, options.scopeId) ? options.scopeId : null;
+  const addedIds = new Set();
+  const withinScope = id => {
+    if (!scope) return true;
+    if (addedIds.has(id)) return true;
+    return id === scope || ancestorsOf(document.nodes, id).includes(scope);
+  };
+  const insertAllowed = parentId => {
+    if (!scope) return true;
+    if (parentId != null && withinScope(parentId)) return true;
+    const parentOfScope = ancestorsOf(document.nodes, scope)[0] ?? null;
+    return parentOfScope === (parentId ?? null);
+  };
+  const trackAdded = node => {
+    if (!isObject(node)) return;
+    if (node.id) addedIds.add(node.id);
+    (node.children || []).forEach(trackAdded);
+  };
+
   for (const op of ops || []) {
     if (!isObject(op)) {
       reject(op, 'not an operation object');
       continue;
+    }
+
+    if (scope) {
+      const outside = reason => reject(op, `${reason} — outside the selection "${scope}"`);
+      if (op.op === 'insert' && !insertAllowed(op.parentId ?? null)) {
+        outside(`cannot insert into "${op.parentId ?? 'the page root'}"`);
+        continue;
+      }
+      if ((op.op === 'update' || op.op === 'remove' || op.op === 'wrap') && !withinScope(op.id)) {
+        outside(`cannot ${op.op} "${op.id}"`);
+        continue;
+      }
+      if (op.op === 'move' && (!withinScope(op.id) || !insertAllowed(op.parentId ?? null))) {
+        outside(`cannot move "${op.id}" to "${op.parentId ?? 'the page root'}"`);
+        continue;
+      }
     }
 
     switch (op.op) {
@@ -139,6 +200,7 @@ export function applyOps(raw, ops) {
           break;
         }
         insertAt(target.list, node, op.index);
+        trackAdded(node);
         applied.push(op);
         break;
       }
@@ -225,6 +287,7 @@ export function applyOps(raw, ops) {
         }
         slot.children.push(hit.node);
         hit.list.splice(hit.index, 1, wrapper);
+        trackAdded(wrapper);
         applied.push(op);
         break;
       }

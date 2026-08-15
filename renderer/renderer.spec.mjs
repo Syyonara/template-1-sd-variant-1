@@ -242,6 +242,83 @@ test('update merges props and leaves everything else byte-identical', () => {
   assert.deepEqual(document.nodes[0].props, { text: 'b', align: 'center' });
 });
 
+/* ----------------------------------------------------------------- scope */
+
+/** Two columns; the dealer has c1 selected. The failure this guards against is
+ * the model "helping" by rebuilding the parts nobody asked about. */
+function scopedDoc() {
+  return {
+    nodes: [
+      {
+        id: 's',
+        type: 'section',
+        props: { background: 'card' },
+        children: [
+          {
+            id: 'r',
+            type: 'row',
+            props: {},
+            children: [
+              { id: 'c1', type: 'column', props: { span: 6 }, children: [{ id: 'h', type: 'heading', props: {} }] },
+              { id: 'c2', type: 'column', props: { span: 6 }, children: [{ id: 'img', type: 'image', props: {} }] },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+test('scope: "add an FAQ here" with a column selected inserts into it and touches nothing else', () => {
+  const { document, rejected } = applyOps(scopedDoc(), [
+    { op: 'insert', parentId: 'c1', node: { id: 'faq1', type: 'faq', props: {} } },
+  ], { scopeId: 'c1' });
+  assert.deepEqual(rejected, []);
+  assert.equal(document.nodes[0].children[0].children[0].children[1].id, 'faq1');
+});
+
+test('scope: an op on the sibling column is rejected, not applied', () => {
+  const before = JSON.stringify(scopedDoc().nodes);
+  const { document, rejected } = applyOps(scopedDoc(), [
+    { op: 'remove', id: 'c2' },
+    { op: 'update', id: 's', props: { background: 'ink' } },
+    { op: 'move', id: 'img', parentId: 'c1' },
+  ], { scopeId: 'c1' });
+  assert.equal(rejected.length, 3);
+  assert.ok(rejected.every((r) => /outside the selection/.test(r.reason)));
+  assert.equal(JSON.stringify(document.nodes), before);
+});
+
+test('scope: updating and wrapping the selected node itself is allowed', () => {
+  const { document, rejected } = applyOps(scopedDoc(), [
+    { op: 'update', id: 'c1', props: { span: 4 } },
+  ], { scopeId: 'c1' });
+  assert.deepEqual(rejected, []);
+  assert.equal(document.nodes[0].children[0].children[0].props.span, 4);
+});
+
+test('scope: insert lands beside the selection but never further out', () => {
+  const beside = applyOps(scopedDoc(), [
+    { op: 'insert', parentId: 'r', node: { id: 'c3', type: 'column', props: { span: 4 }, children: [] } },
+  ], { scopeId: 'c1' });
+  assert.deepEqual(beside.rejected, []);
+
+  const farOut = applyOps(scopedDoc(), [
+    { op: 'insert', parentId: null, node: { id: 's2', type: 'section', props: {}, children: [] } },
+  ], { scopeId: 'c1' });
+  assert.equal(farOut.rejected.length, 1);
+});
+
+test('scope: a node inserted in this batch is editable in the same batch', () => {
+  const { document, rejected } = applyOps(scopedDoc(), [
+    { op: 'insert', parentId: 'c1', node: { id: 'h2', type: 'heading', props: { text: 'a' } } },
+    { op: 'update', id: 'h2', props: { text: 'b' } },
+  ], { scopeId: 'c1' });
+  assert.deepEqual(rejected, []);
+  const inserted = document.nodes[0].children[0].children[0].children.find((n) => n.id === 'h2');
+  assert.equal(inserted.props.text, 'b');
+});
+
 /* -------------------------------------------------------------- templates */
 
 const TEMPLATE = {
