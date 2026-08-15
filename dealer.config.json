@@ -1,6 +1,6 @@
 {
   "$schema": "./dealer.config.schema.json",
-  "contractVersion": "2.0.0",
+  "contractVersion": "4.0.0",
   "name": "BuzzNerd Dealer",
   "shortName": "BuzzNerd",
   "channelToken": "REPLACE_CHANNEL_TOKEN",

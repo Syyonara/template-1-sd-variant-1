@@ -1,46 +1,86 @@
-# Global Elements — Header, Menus, Footer, and the Storefront Handoff
+# Global Elements — Templates, Menus, and the Storefront Handoff
 
-Three things are global to a dealer site and are defined **once**, then shared across
-every page: the **header**, the **menus** it renders, and the **footer**. Editing the
-shared element updates every page at once. Never copy chrome into a page body.
+What surrounds a page is a **template**: a full layout that a page is inserted into.
+Editing the template updates every page using it at once. Never copy chrome into a
+page.
 
-## Header
+## Templates
 
-- One header, shown on every page: logo, navigation, and a primary call-to-action.
-- The header markup lives in `site/chrome/header.html`. It contains **menu markers**,
-  not links:
+A template is a document like a page — sections, rows, columns and widgets — with one
+extra requirement: somewhere in it sits a `contentArea` node, and that is where the
+page's own content goes. Everything else is free. Header, hero, sidebar, related
+content, footer, in whatever arrangement the design calls for:
 
-  ```html
-  <nav class="topnav" aria-label="Primary" data-bz-menu="desktop-main">
-    <!-- menu:desktop-main -->
-  </nav>
-  ```
+```json
+{
+  "id": "with-sidebar",
+  "name": "Sidebar layout",
+  "conditions": [{ "type": "allPages" }],
+  "nodes": [
+    { "id": "header", "type": "section", "props": {}, "children": [ … ] },
+    { "id": "body", "type": "row", "props": {}, "children": [
+      { "id": "main", "type": "column", "props": { "span": 9 }, "children": [
+        { "id": "content", "type": "contentArea", "props": {} }
+      ]},
+      { "id": "side", "type": "column", "props": { "span": 3 }, "children": [ … ] }
+    ]},
+    { "id": "footer", "type": "section", "props": {}, "children": [ … ] }
+  ]
+}
+```
 
-  The build replaces each `<!-- menu:<location> -->` marker with links rendered from
-  `site/menus.json`. **Never hand-write nav links into the header.** A menu edit must
-  update every page and the storefront partials at once, and that only works if there
-  is exactly one source.
+Templates live in `site/templates/<id>.json`. Which one applies to a given page is a
+**display condition**, resolved by specificity — a condition naming one page beats one
+naming all pages, which beats one naming the entire site:
 
-- Style the header with tokens. It may be sticky, transparent-on-hero, and so on —
-  design freedom applies, but it stays one shared element.
+| Condition | Applies to |
+| --- | --- |
+| `entireSite` | everything |
+| `allPages` / `allPosts` | every page / every post |
+| `blog` | the post index |
+| `inventory` | live inventory browse and detail |
+| `pageGroup` + `ref` | every page in one group |
+| `page` / `post` + `ref` | one named page or post |
+
+There is no special home-page mechanism. A template for the home page is
+`{ "type": "page", "ref": "home" }` like any other.
+
+The header and footer fragments the storefront borrows are **derived**: whatever
+precedes the content area is the header, whatever follows it is the footer. Nothing
+declares them, which is what lets a template carry a hero above the content without
+the storefront needing to know.
 
 ## Menus
 
-`site/menus.json` defines four locations. All four exist on every dealer site:
+A menu is structure and nothing else — a named tree of items in `site/menus.json`:
 
-| Location | Rendered in |
-| --- | --- |
-| `desktop-main` | header, desktop |
-| `mobile-main` | header, mobile disclosure panel |
-| `desktop-footer` | footer, desktop |
-| `mobile-footer` | footer, mobile |
+```json
+{
+  "version": 3,
+  "menus": [
+    { "id": "main", "name": "Main menu", "items": [
+      { "id": "home", "label": "Home", "type": "page", "ref": "home" },
+      { "id": "inventory", "label": "Inventory", "type": "inventory" },
+      { "id": "about", "label": "About", "type": "url", "url": "/about", "children": [ … ] }
+    ]}
+  ]
+}
+```
 
-Each item is `{ "label": "...", "href": "..." }`. Keep an Inventory item pointing at
-`/store` in both main menus.
+It has no idea where it appears or what it looks like. A `menu` widget in a template
+names one by id and owns the presentation, so the same menu can be a header bar and a
+footer column without being duplicated. There are **no theme locations**: putting a menu
+somewhere new is dropping a widget, not editing a vocabulary.
+
+An item's `type` decides how its destination resolves — `page` and `post` point at a
+slug so renaming an address updates every menu that links to it; `inventory` points at
+the storefront prefix; `url` is a literal address; `label` is a heading inside a
+submenu and is not a link. Never hand-write nav links into a template.
 
 ## Footer
 
-- One footer on every page: brand line, footer menu, contact, legal and year.
+- The footer is the part of the template after the content area: brand line, footer
+  menu, contact, legal and year.
 - A good place for machine-readable business facts that also help AIO (address,
   phone, hours) — see `aio.md`.
 
