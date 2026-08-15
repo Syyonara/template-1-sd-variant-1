@@ -15,31 +15,46 @@ it can never disagree with what the build can actually render.
 
 ## 1. What a page is
 
-A page is a list of blocks:
+A page is a **tree of nodes**:
 
 ```json
 {
-  "version": 1,
-  "blocks": [
-    { "id": "hero", "type": "hero", "props": { "headline": "…", "headingLevel": 1 } },
-    { "id": "quick", "type": "iconGrid", "props": { "items": [ … ] } }
+  "version": 2,
+  "nodes": [
+    { "id": "hero", "type": "section", "props": { "background": "ink" }, "children": [
+      { "id": "hero-row", "type": "row", "props": { "gap": 6 }, "children": [
+        { "id": "hero-copy", "type": "column", "props": { "span": 7 }, "children": [
+          { "id": "hero-h", "type": "heading", "props": { "text": "…", "headingLevel": 1 } },
+          { "id": "hero-cta", "type": "buttons", "props": { "items": [{ "ctaId": "browse-inventory" }] } }
+        ]},
+        { "id": "hero-media", "type": "column", "props": { "span": 5 }, "children": [
+          { "id": "hero-img", "type": "image", "props": { "image": { "src": "…", "alt": "…" } } }
+        ]}
+      ]}
+    ]}
   ]
 }
 ```
 
-- `id` is short, stable and unique within the page. **Keep existing ids.** Changing an
-  id means the editor treats the block as deleted and re-added, which loses the
-  dealer's per-block history.
-- `type` must be an id from the catalogue below. Nothing else renders.
-- `props` must validate against that block's schema. Unknown props are dropped.
+- `id` is short, stable and unique across the whole document. **Keep existing ids.**
+  Changing one means the editor treats the node as deleted and re-added, which loses
+  the dealer's per-node history.
+- `type` is a layout type or a widget id from the catalogue. Nothing else renders.
+- `props` must validate against that type's schema. Unknown props are rejected.
+- **Only layout nodes have `children`.** A widget with children is rejected.
 
-Three block families:
+Four layout types, and everything else is a widget:
 
-| Family | Where it can go |
+| Type | Holds |
 | --- | --- |
-| **section** — `hero`, `splitHero`, `statBand`, … | Top level only. Always full width. |
-| **content** — `heading`, `text`, `image`, `buttons`, `form`, `widget`, … | Top level, or inside a `row` column. |
-| **layout** — `row`, `spacer`, `divider` | Top level. A `row` holds 2–3 columns of content blocks. Columns never nest. |
+| **section** | Rows, and widgets. A full-bleed band of the page. |
+| **row** | Columns, and nothing else. A 12-column grid. |
+| **column** | Rows (nested grids), and widgets. Declares its `span`. |
+| **contentArea** | Nothing. Marks where a page's content goes — templates only. |
+| *widget* — `heading`, `image`, `form`, `menu`, `hero`, … | Nothing. A leaf. |
+
+Spans in one row should add up to 12: two equal columns are 6 + 6, three are 4 + 4 + 4,
+a two-thirds-plus-a-third is 8 + 4, a sidebar is 3 + 9.
 
 ## 2. How you reply
 
@@ -48,15 +63,22 @@ Three block families:
 ```json
 {
   "ops": [
-    { "op": "add", "block": { "id": "faq", "type": "widget", "props": { … } }, "afterId": "band" },
-    { "op": "addToColumn", "rowId": "contact-row", "columnIndex": 1, "block": { … }, "afterId": null },
-    { "op": "update", "id": "hero", "patch": { "headline": "New headline" } },
-    { "op": "move", "id": "band", "afterId": "hero" },
+    { "op": "insert", "node": { "id": "faq", "type": "section", "props": {}, "children": [ … ] },
+      "parentId": null, "index": 2 },
+    { "op": "move", "id": "band", "parentId": "main-col", "index": 0 },
+    { "op": "update", "id": "hero-h", "props": { "text": "New headline" } },
+    { "op": "wrap", "id": "hero-h", "node": { "id": "r", "type": "row", "props": {}, "children": [ … ] } },
     { "op": "remove", "id": "old-cta" }
   ],
   "summary": "Replaced the hero headline and added an FAQ below the stat band."
 }
 ```
+
+`insert` carries a whole subtree, so one operation creates a section, its row, its
+columns and their widgets together. `index` is where the node **ends up** among its
+parent's children; `null` or absent means last. `wrap` puts an existing node inside a
+new container — that is how "make this two columns" keeps the node instead of deleting
+and re-adding it.
 
 - `update.patch` carries **only the fields that changed**. Every unmentioned block and
   every unset field survives untouched. A whole-tree reply silently discards work the
@@ -206,8 +228,9 @@ Rules that are enforced, not advisory:
   `text`, `textarea`, `richtext`, `url`, `image`, `number`, `boolean`, `select`
   (needs `options`), `color`, `list` (needs `fields`). Anything undeclared renders empty
   and cannot be edited.
-- **Nesting is opt-in.** Write `<div data-bz-slot="0"></div>` where other blocks may be
-  dropped. Slot contents live in `props.columns[0]`, the same shape `row` uses.
+- **A custom widget is a LEAF.** It has no drop targets of its own — `data-bz-slot` is
+  rejected. If what you want is "a widget with two halves", that is a row with two
+  columns, not a widget.
 - **Style through tokens.** Your CSS is automatically scoped to `.bz-block--<id>`, so
   selectors cannot leak — but a hardcoded hex still breaks the dealer's design system.
   Use `var(--accent)`, `var(--space-4)`, `var(--radius-card)` and the rest.
@@ -235,15 +258,22 @@ event handler or a tracking pixel inside it; all four are stripped.
 
 ## 8. What you must never do
 
-- Never return the whole block tree from an edit.
+- Never return the whole tree from an edit.
+- Never give a widget `children`. Layout is the section / row / column system's job.
+- Never emit a flat list of widgets when the design has structure — that is a page
+  nobody can rearrange afterwards.
 - Never write `<form>`, `<input>` or a submit button as markup.
 - Never hardcode a brand colour, a font family or a phone number a widget can supply.
-- Never rebuild the header, footer or navigation inside a page. They are templates,
-  resolved per route, and a page-level copy of them cannot be updated centrally.
+- Never rebuild the header, footer or navigation inside a page. They belong to the
+  page's **template**, which is a full layout with a `contentArea` node marking where
+  the page goes; a page-level copy of them cannot be updated centrally.
+- Never type a list of links by hand. A `menu` widget names one of the dealer's menus
+  by id, and the menu is edited in one place.
 - Never create content under the storefront prefix.
 - Never remove or rewrite a `data-bz-*` attribute.
 
 ---
 
-*Appended at request time: the block catalogue, the dealer's forms, buttons, platform
-widgets and custom widgets, and the dealer's current token values.*
+*Appended at request time: the layout vocabulary and its nesting rules, the widget
+catalogue, the dealer's forms, buttons, menus, platform widgets and custom widgets, and
+the dealer's current token values.*
