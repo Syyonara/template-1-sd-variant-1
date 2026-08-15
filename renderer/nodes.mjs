@@ -121,7 +121,7 @@ export const LAYOUT_REGISTRY = {
         }),
         stackOn: str('Width at which the columns stack.', {
           enum: ['mobile', 'tablet', 'never'],
-          default: 'tablet',
+          default: 'mobile',
         }),
         reverseStacked: bool('When stacked, show the columns in reverse order.'),
       },
@@ -131,7 +131,7 @@ export const LAYOUT_REGISTRY = {
       return `<div${attrs({
         class: cls(
           'bz-row',
-          `bz-row--stack-${props.stackOn || 'tablet'}`,
+          `bz-row--stack-${props.stackOn || 'mobile'}`,
           props.align && props.align !== 'stretch' && `bz-row--v-${props.align}`,
           props.reverseStacked && 'bz-row--rev',
         ),

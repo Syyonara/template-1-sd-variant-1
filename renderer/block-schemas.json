@@ -390,7 +390,7 @@
               "tablet",
               "never"
             ],
-            "default": "tablet"
+            "default": "mobile"
           },
           "reverseStacked": {
             "type": "boolean",
