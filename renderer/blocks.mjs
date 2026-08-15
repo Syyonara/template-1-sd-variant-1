@@ -163,49 +163,9 @@ function statList(stats, extra) {
 const BLOCKS = {
   /* ------------------------------------------------------------ layout */
 
-  row: {
-    label: 'Columns',
-    category: 'layout',
-    schema: {
-      type: 'object',
-      properties: {
-        columns: {
-          type: 'array',
-          description:
-            'Two or three columns, each a list of content blocks. Columns never nest, and a section block is never placed inside one — sections are always full-width and top-level.',
-          minItems: 2,
-          maxItems: 3,
-          items: { type: 'array', items: { $ref: '#/definitions/contentBlock' } },
-        },
-        align: str('Vertical alignment of the columns.', {
-          enum: ['start', 'center'],
-          default: 'start',
-        }),
-      },
-      required: ['columns'],
-    },
-    render(props, ctx, block, renderChildren) {
-      const columns = Array.isArray(props.columns) ? props.columns.slice(0, 3) : [];
-      if (columns.length < 2) return '';
-      // data-bz-slot marks a place children may go. The editor uses it as a drop
-      // target; the published page ignores it. Emitting it in both keeps the
-      // canvas and the build agreeing about where nesting is allowed rather than
-      // the editor guessing.
-      const cells = columns.map(
-        (col, i) => `<div class="bz-col" data-bz-slot="${i}">${renderChildren(col, ctx)}</div>`,
-      );
-      return container(
-        `<div class="${cls(`bz-row bz-row--${columns.length}`, props.align === 'center' && 'bz-row--mid')}">${join(
-          cells,
-          '',
-        )}</div>`,
-      );
-    },
-  },
-
   spacer: {
     label: 'Spacer',
-    category: 'layout',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: { size: int('Step on the spacing scale.', { minimum: 1, maximum: 10, default: 6 }) },
@@ -218,7 +178,7 @@ const BLOCKS = {
 
   divider: {
     label: 'Divider',
-    category: 'layout',
+    category: 'basic',
     schema: { type: 'object', properties: {} },
     render() {
       return container('<hr class="bz-hr" />');
@@ -229,7 +189,7 @@ const BLOCKS = {
 
   heading: {
     label: 'Heading',
-    category: 'content',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: {
@@ -251,7 +211,7 @@ const BLOCKS = {
 
   text: {
     label: 'Text',
-    category: 'content',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: {
@@ -282,7 +242,7 @@ const BLOCKS = {
 
   image: {
     label: 'Image',
-    category: 'content',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: {
@@ -302,7 +262,7 @@ const BLOCKS = {
 
   buttons: {
     label: 'Buttons',
-    category: 'content',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: { items: CTAS_SCHEMA, align: ALIGN },
@@ -317,7 +277,7 @@ const BLOCKS = {
 
   list: {
     label: 'Feature list',
-    category: 'content',
+    category: 'basic',
     schema: {
       type: 'object',
       properties: {
@@ -357,7 +317,7 @@ const BLOCKS = {
 
   customHtml: {
     label: 'Custom HTML',
-    category: 'content',
+    category: 'basic',
     /**
      * The escape hatch. Flagged as untagged in the registry because the platform
      * cannot vouch for analytics attributes inside markup it did not generate —
@@ -377,7 +337,7 @@ const BLOCKS = {
 
   form: {
     label: 'Form',
-    category: 'content',
+    category: 'forms',
     schema: {
       type: 'object',
       properties: {
@@ -406,7 +366,7 @@ const BLOCKS = {
 
   widget: {
     label: 'Widget',
-    category: 'widget',
+    category: 'dynamic',
     schema: {
       type: 'object',
       properties: {
@@ -428,49 +388,9 @@ const BLOCKS = {
   // blocks, edited in the same canvas as a page, because "the header is a
   // template you edit like a page" is the whole point of the theme builder.
 
-  bar: {
-    label: 'Bar',
-    category: 'chrome',
-    schema: {
-      type: 'object',
-      properties: {
-        columns: {
-          type: 'array',
-          description:
-            'Two or three groups laid out across the bar — typically logo, navigation, and a call to action.',
-          minItems: 1,
-          maxItems: 3,
-          items: { type: 'array', items: { $ref: '#/definitions/contentBlock' } },
-        },
-        background: str('Bar background.', {
-          enum: ['card', 'paper', 'ink', 'transparent'],
-          default: 'card',
-        }),
-        sticky: bool('Keep the bar in view as the page scrolls.'),
-        density: str('Vertical padding.', { enum: ['compact', 'regular'], default: 'regular' }),
-        divider: bool('Draw a hairline under the bar.'),
-      },
-      required: ['columns'],
-    },
-    render(props, ctx, block, renderChildren) {
-      const columns = Array.isArray(props.columns) ? props.columns.slice(0, 3) : [];
-      if (!columns.length) return '';
-      const inner = columns.map(
-        (col, i) => `<div class="bz-bar__cell" data-bz-slot="${i}">${renderChildren(col, ctx)}</div>`,
-      );
-      return `<div class="${cls(
-        'bz-bar',
-        `bz-bar--${props.background || 'card'}`,
-        props.density === 'compact' && 'bz-bar--compact',
-        props.sticky && 'bz-bar--sticky',
-        props.divider && 'bz-bar--divider',
-      )}"><div class="bz-container bz-bar__inner">${join(inner, '')}</div></div>`;
-    },
-  },
-
   logo: {
     label: 'Logo',
-    category: 'chrome',
+    category: 'navigation',
     schema: {
       type: 'object',
       properties: {
@@ -500,37 +420,41 @@ const BLOCKS = {
 
   menu: {
     label: 'Menu',
-    category: 'chrome',
+    category: 'navigation',
     schema: {
       type: 'object',
       properties: {
-        /* A location is the usual choice — "whatever is assigned to Primary" —
-           so swapping the site's main menu is one change in Menus rather than an
-           edit to every template that shows it. */
-        location: str(
-          'Which menu to show. Use a location id (primary, mobile, footer, legal, utility) so the menu can be swapped from the Menus screen, or a menu id to pin one specific menu.',
-        ),
+        menuId: str('Which menu to show, by id. Menus are managed on the Menus screen.'),
         layout: str('Direction.', { enum: ['horizontal', 'vertical'], default: 'horizontal' }),
-        collapseOnMobile: bool('Collapse behind a menu button on small screens.', ),
-        align: str('Alignment within its cell.', { enum: ['start', 'center', 'end'], default: 'start' }),
+        collapseOnMobile: bool('Collapse behind a menu button on small screens.'),
+        align: str('Alignment within its column.', {
+          enum: ['start', 'center', 'end'],
+          default: 'start',
+        }),
+        depth: int('How many levels to draw. 1 hides submenus.', {
+          minimum: 1,
+          maximum: 3,
+          default: 2,
+        }),
       },
-      required: ['location'],
+      required: ['menuId'],
     },
     render(props, ctx) {
-      const html = renderMenu(ctx && ctx.menus, props.location, ctx);
+      const html = renderMenu(ctx && ctx.menus, props.menuId, ctx);
       if (!html) {
-        // An unassigned location is a normal state during setup, so the editor
-        // shows a hint rather than nothing at all — an invisible block is
-        // indistinguishable from a broken one.
+        // A menu that has not been chosen yet is a normal state during setup, so
+        // the editor shows a hint rather than nothing at all — an invisible
+        // widget is indistinguishable from a broken one.
         return ctx && ctx.editing
-          ? `<p class="bz-widget__empty">No menu assigned to “${esc(props.location)}” yet.</p>`
+          ? `<p class="bz-widget__empty">Pick a menu for this widget.</p>`
           : '';
       }
       const nav = `<nav class="${cls(
         'bz-menu',
         `bz-menu--${props.layout || 'horizontal'}`,
         `bz-menu--${props.align || 'start'}`,
-      )}" aria-label="${esc(props.location)}">${html}</nav>`;
+        Number(props.depth) === 1 && 'bz-menu--flat',
+      )}" aria-label="Menu">${html}</nav>`;
       if (!props.collapseOnMobile) return nav;
       return `<div class="bz-menu-wrap" data-bz-collapse>
   <button class="bz-menu-toggle" type="button" aria-expanded="false" aria-label="Menu"><span></span><span></span><span></span></button>
@@ -543,7 +467,7 @@ const BLOCKS = {
 
   hero: {
     label: 'Hero (full-bleed)',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -589,7 +513,7 @@ const BLOCKS = {
 
   splitHero: {
     label: 'Split hero (photo)',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -619,7 +543,7 @@ const BLOCKS = {
 
   iconGrid: {
     label: 'Quick links',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -666,7 +590,7 @@ const BLOCKS = {
 
   categoryGrid: {
     label: 'Category grid',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -715,7 +639,7 @@ const BLOCKS = {
 
   statBand: {
     label: 'Stat band',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -741,7 +665,7 @@ const BLOCKS = {
 
   serviceGrid: {
     label: 'Service grid',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -786,7 +710,7 @@ const BLOCKS = {
 
   testimonials: {
     label: 'Testimonials',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -831,7 +755,7 @@ const BLOCKS = {
 
   logoStrip: {
     label: 'Logo strip',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -873,7 +797,7 @@ const BLOCKS = {
 
   locationsMap: {
     label: 'Locations + map',
-    category: 'section',
+    category: 'prebuilt',
     /**
      * The static half is authored; the map half is a widget, because a dealer's
      * locations are platform data and must not be re-typed here. Leave
@@ -946,7 +870,7 @@ const BLOCKS = {
 
   footer: {
     label: 'Storefront footer',
-    category: 'section',
+    category: 'prebuilt',
     schema: {
       type: 'object',
       properties: {
@@ -1043,29 +967,28 @@ function stripUnsafe(html) {
 
 /* ----------------------------------------------------------------- registry */
 
-/** Block ids that may sit inside a row column or a bar cell. */
-export const CONTENT_BLOCK_TYPES = Object.entries(BLOCKS)
-  .filter(([, def]) => ['content', 'widget', 'chrome'].includes(def.category))
-  .map(([id]) => id);
-
-/** Block ids a header or footer template is built from. */
-export const CHROME_BLOCK_TYPES = Object.entries(BLOCKS)
-  .filter(([, def]) => def.category === 'chrome')
-  .map(([id]) => id);
-
-/** Block ids that are always full-width and top-level. */
-export const SECTION_BLOCK_TYPES = Object.entries(BLOCKS)
-  .filter(([, def]) => def.category === 'section')
-  .map(([id]) => id);
-
-export const LAYOUT_BLOCK_TYPES = Object.entries(BLOCKS)
-  .filter(([, def]) => def.category === 'layout')
-  .map(([id]) => id);
+/**
+ * Widget groups, in palette order.
+ *
+ * These replaced `category`, which had come to mean two different things at
+ * once: where a block was allowed to sit (`section` meant top-level only) and
+ * what kind of thing it was. Placement is the layout system's job now — `accepts`
+ * in nodes.mjs answers it for every type — so a group here is only ever a label
+ * on a palette drawer.
+ */
+export const WIDGET_GROUPS = [
+  { id: 'basic', label: 'Basic' },
+  { id: 'navigation', label: 'Navigation' },
+  { id: 'forms', label: 'Forms' },
+  { id: 'dynamic', label: 'Dealer data' },
+  { id: 'prebuilt', label: 'Prebuilt sections' },
+  { id: 'custom', label: 'This site' },
+];
 
 /**
- * The public registry: block id → { render, schema, label, category, autoTagged }.
- * `autoTagged` is false only for `customHtml`; the editor marks those blocks and
- * the build warns, because the platform cannot vouch for their tagging.
+ * The platform widget registry: id → { render, schema, label, group, autoTagged }.
+ * `autoTagged` is false only for `customHtml`; the editor marks those and the
+ * build warns, because the platform cannot vouch for their tagging.
  */
 export const blockRegistry = Object.fromEntries(
   Object.entries(BLOCKS).map(([id, def]) => [
@@ -1074,12 +997,18 @@ export const blockRegistry = Object.fromEntries(
       id,
       label: def.label,
       category: def.category,
+      group: def.category,
       autoTagged: def.autoTagged !== false,
       schema: def.schema,
       render: def.render,
     },
   ]),
 );
+
+/** Every widget id the platform ships. */
+export function widgetIds() {
+  return Object.keys(blockRegistry);
+}
 
 /* ------------------------------------------------- custom widget registry */
 
@@ -1147,22 +1076,18 @@ export function getBlock(type) {
   return blockRegistry[type] || customRegistry.get(type) || null;
 }
 
-/** Content block ids including custom widgets that may sit inside a column. */
-export function contentBlockTypes() {
-  return [...CONTENT_BLOCK_TYPES, ...customWidgets().filter((w) => w.category !== 'section').map((w) => w.id)];
+/** Every placeable widget id — platform and this site's own. */
+export function allWidgetIds() {
+  return [...Object.keys(blockRegistry), ...customWidgets().map((w) => w.id)];
 }
 
-/** Section block ids including custom widgets declared as sections. */
-export function sectionBlockTypes() {
-  return [...SECTION_BLOCK_TYPES, ...customWidgets().filter((w) => w.category === 'section').map((w) => w.id)];
-}
-
-/** Machine-readable catalogue for the AI contract and the editor's inspector. */
+/** Machine-readable widget catalogue for the AI contract and the inspector. */
 export function blockCatalogue() {
   const builtIn = Object.values(blockRegistry).map((b) => ({
     id: b.id,
     label: b.label,
     category: b.category,
+    group: b.group,
     autoTagged: b.autoTagged,
     schema: b.schema,
   }));
@@ -1170,13 +1095,13 @@ export function blockCatalogue() {
     id: w.id,
     label: w.label,
     description: w.description,
-    // Presented under its own category so the palette can group them, while the
-    // renderer still treats `custom` widgets by their real placement category.
+    // Grouped under "This site" in the palette. Placement is not a property of a
+    // widget any more — the layout system decides where a widget may go, and the
+    // answer is the same for every one of them.
     category: 'custom',
-    placement: w.category,
+    group: 'custom',
     custom: true,
     origin: w.origin,
-    slots: w.slots,
     autoTagged: w.autoTagged,
     schema: w.schema,
   }));

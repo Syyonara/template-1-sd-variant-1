@@ -1,11 +1,11 @@
-// Emit the block catalogue as plain JSON.
+// Emit the node catalogue as plain JSON.
 //
-// The Vendure plugin and the dashboard both need to know what blocks exist and
-// what props each takes — the plugin to build the AI contract and validate what
-// comes back, the dashboard to build the block inspector. Neither can import an
-// ESM module out of this repo at build time, so the catalogue is exported here
-// and vendored, with `npm run check:schemas` failing if the vendored copy has
-// drifted from the renderer that actually does the rendering.
+// The Vendure plugin and the dashboard both need to know what can be placed and
+// what each thing takes — the plugin to build the AI contract and validate what
+// comes back, the dashboard to build the inspector and to register GrapesJS
+// component types. Neither can import an ESM module out of this repo at build
+// time, so the catalogue is exported here and vendored, with the check script
+// failing if the vendored copy has drifted from the renderer that renders.
 //
 // Run: node scripts/export-schemas.mjs
 
@@ -15,34 +15,60 @@ import { fileURLToPath } from 'node:url';
 
 import {
   RENDERER_VERSION,
-  blockCatalogue,
-  staticWidgetIds,
-  DEFAULT_TOKENS,
+  DOCUMENT_VERSION,
+  CONDITION_TYPES,
+  GRID_COLUMNS,
   MENU_ITEM_TYPES,
-  MENU_LOCATIONS,
+  MAX_MENU_DEPTH,
   PROP_TYPES,
-  SLOTS,
+  ROW_PRESETS,
   TOKEN_GROUPS,
+  DEFAULT_TOKENS,
+  WIDGET_GROUPS,
+  blockCatalogue,
+  layoutCatalogue,
+  staticWidgetIds,
 } from '../renderer/index.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'block-schemas.json');
 
+/**
+ * `accepts` as data.
+ *
+ * The predicate itself cannot be vendored — it is code — but its whole truth
+ * table can, and that is what the dashboard turns into GrapesJS `droppable`
+ * rules and what the AI contract states. One table, three consumers, no chance
+ * of the editor allowing a drop the build rejects.
+ */
+const layout = layoutCatalogue();
+const nesting = {
+  root: { accepts: ['section', 'row', 'contentArea', 'widget'] },
+  ...Object.fromEntries(layout.map(node => [node.id, { accepts: node.accepts }])),
+};
+
 const catalogue = {
   rendererVersion: RENDERER_VERSION,
+  documentVersion: DOCUMENT_VERSION,
+  gridColumns: GRID_COLUMNS,
   tokenGroups: TOKEN_GROUPS,
   // The starter token set travels with the catalogue so the dashboard can offer
   // a full, editable design system for a repo that has no tokens file yet.
   defaultTokens: DEFAULT_TOKENS,
-  menuLocations: MENU_LOCATIONS,
   menuItemTypes: MENU_ITEM_TYPES,
-  templateSlots: SLOTS,
+  maxMenuDepth: MAX_MENU_DEPTH,
+  conditionTypes: CONDITION_TYPES,
+  rowPresets: ROW_PRESETS,
+  widgetGroups: WIDGET_GROUPS,
   staticWidgets: staticWidgetIds(),
-  // The prop editor types a custom widget definition may declare. The dashboard
-  // builds its widget editor from this and the plugin validates against it, so
-  // adding a type is a one-file change here rather than three in lockstep.
+  // Prop editor types a custom widget definition may declare.
   customWidgetPropTypes: PROP_TYPES,
-  blocks: blockCatalogue(),
+  layout,
+  nesting,
+  widgets: blockCatalogue(),
 };
 
 writeFileSync(OUT, JSON.stringify(catalogue, null, 2) + '\n');
-console.log(`Exported ${catalogue.blocks.length} block schemas -> renderer/block-schemas.json`);
+console.log(
+  `Exported ${catalogue.layout.length} layout nodes and ${catalogue.widgets.length} widgets ` +
+    `-> renderer/block-schemas.json`,
+);

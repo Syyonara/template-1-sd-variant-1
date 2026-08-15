@@ -1,5 +1,7 @@
 {
-  "rendererVersion": "3.1.0",
+  "rendererVersion": "4.0.0",
+  "documentVersion": 2,
+  "gridColumns": 12,
   "tokenGroups": {
     "colors": [
       "accent",
@@ -100,33 +102,6 @@
       "container": "1160px"
     }
   },
-  "menuLocations": [
-    {
-      "id": "primary",
-      "label": "Primary",
-      "description": "The main navigation in your header."
-    },
-    {
-      "id": "mobile",
-      "label": "Mobile",
-      "description": "Shown behind the menu button on small screens."
-    },
-    {
-      "id": "footer",
-      "label": "Footer",
-      "description": "The main footer navigation."
-    },
-    {
-      "id": "legal",
-      "label": "Legal",
-      "description": "Privacy, terms and similar, usually in the footer."
-    },
-    {
-      "id": "utility",
-      "label": "Utility",
-      "description": "A thin bar above the header — phone, hours, account."
-    }
-  ],
   "menuItemTypes": [
     "page",
     "post",
@@ -134,9 +109,158 @@
     "url",
     "label"
   ],
-  "templateSlots": [
-    "header",
-    "footer"
+  "maxMenuDepth": 3,
+  "conditionTypes": [
+    {
+      "id": "entireSite",
+      "label": "Entire site",
+      "description": "Every page and post, unless something more specific matches.",
+      "ref": null,
+      "specificity": 100
+    },
+    {
+      "id": "allPages",
+      "label": "All pages",
+      "description": "Every page.",
+      "ref": null,
+      "specificity": 200
+    },
+    {
+      "id": "allPosts",
+      "label": "All posts",
+      "description": "Every blog post.",
+      "ref": null,
+      "specificity": 200
+    },
+    {
+      "id": "blog",
+      "label": "Blog index",
+      "description": "The page that lists your posts.",
+      "ref": null,
+      "specificity": 300
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "description": "Live inventory browse and detail pages.",
+      "ref": null,
+      "specificity": 300
+    },
+    {
+      "id": "pageGroup",
+      "label": "A group of pages",
+      "description": "Every page tagged with one group.",
+      "ref": "group",
+      "specificity": 400
+    },
+    {
+      "id": "page",
+      "label": "A specific page",
+      "description": "",
+      "ref": "page",
+      "specificity": 500
+    },
+    {
+      "id": "post",
+      "label": "A specific post",
+      "description": "",
+      "ref": "post",
+      "specificity": 500
+    }
+  ],
+  "rowPresets": [
+    {
+      "id": "one",
+      "label": "One column",
+      "spans": [
+        12
+      ]
+    },
+    {
+      "id": "two",
+      "label": "Two columns",
+      "spans": [
+        6,
+        6
+      ]
+    },
+    {
+      "id": "three",
+      "label": "Three columns",
+      "spans": [
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "id": "four",
+      "label": "Four columns",
+      "spans": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    {
+      "id": "left-wide",
+      "label": "Two thirds + a third",
+      "spans": [
+        8,
+        4
+      ]
+    },
+    {
+      "id": "right-wide",
+      "label": "A third + two thirds",
+      "spans": [
+        4,
+        8
+      ]
+    },
+    {
+      "id": "sidebar-left",
+      "label": "Sidebar + content",
+      "spans": [
+        3,
+        9
+      ]
+    },
+    {
+      "id": "sidebar-right",
+      "label": "Content + sidebar",
+      "spans": [
+        9,
+        3
+      ]
+    }
+  ],
+  "widgetGroups": [
+    {
+      "id": "basic",
+      "label": "Basic"
+    },
+    {
+      "id": "navigation",
+      "label": "Navigation"
+    },
+    {
+      "id": "forms",
+      "label": "Forms"
+    },
+    {
+      "id": "dynamic",
+      "label": "Dealer data"
+    },
+    {
+      "id": "prebuilt",
+      "label": "Prebuilt sections"
+    },
+    {
+      "id": "custom",
+      "label": "This site"
+    }
   ],
   "staticWidgets": [
     "locations-map",
@@ -160,46 +284,227 @@
     "color",
     "list"
   ],
-  "blocks": [
+  "layout": [
     {
-      "id": "row",
-      "label": "Columns",
+      "id": "section",
+      "label": "Section",
       "category": "layout",
+      "accepts": [
+        "row",
+        "widget"
+      ],
       "autoTagged": true,
       "schema": {
         "type": "object",
         "properties": {
-          "columns": {
-            "type": "array",
-            "description": "Two or three columns, each a list of content blocks. Columns never nest, and a section block is never placed inside one — sections are always full-width and top-level.",
-            "minItems": 2,
-            "maxItems": 3,
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/contentBlock"
-              }
-            }
+          "width": {
+            "type": "string",
+            "description": "How wide the content inside runs.",
+            "enum": [
+              "boxed",
+              "wide",
+              "full"
+            ],
+            "default": "boxed"
+          },
+          "background": {
+            "type": "string",
+            "description": "Surface behind this section.",
+            "enum": [
+              "none",
+              "paper",
+              "card",
+              "ink",
+              "accent"
+            ],
+            "default": "none"
+          },
+          "paddingY": {
+            "type": "integer",
+            "description": "Vertical padding, on the spacing scale.",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 7
+          },
+          "anchor": {
+            "type": "string",
+            "description": "An id, so a link can jump here. Lower-case, no spaces."
+          },
+          "minHeight": {
+            "type": "string",
+            "description": "Minimum height.",
+            "enum": [
+              "auto",
+              "half",
+              "full"
+            ],
+            "default": "auto"
           },
           "align": {
             "type": "string",
-            "description": "Vertical alignment of the columns.",
+            "description": "Vertical alignment when the section is taller than its content.",
             "enum": [
               "start",
-              "center"
+              "center",
+              "end"
             ],
             "default": "start"
           }
-        },
-        "required": [
-          "columns"
-        ]
+        }
       }
     },
     {
+      "id": "row",
+      "label": "Row",
+      "category": "layout",
+      "accepts": [
+        "column"
+      ],
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "gap": {
+            "type": "integer",
+            "description": "Space between columns, on the spacing scale.",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 6
+          },
+          "align": {
+            "type": "string",
+            "description": "How columns line up vertically.",
+            "enum": [
+              "stretch",
+              "start",
+              "center",
+              "end"
+            ],
+            "default": "stretch"
+          },
+          "stackOn": {
+            "type": "string",
+            "description": "Width at which the columns stack.",
+            "enum": [
+              "mobile",
+              "tablet",
+              "never"
+            ],
+            "default": "tablet"
+          },
+          "reverseStacked": {
+            "type": "boolean",
+            "description": "When stacked, show the columns in reverse order."
+          }
+        }
+      }
+    },
+    {
+      "id": "column",
+      "label": "Column",
+      "category": "layout",
+      "accepts": [
+        "row",
+        "widget"
+      ],
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "span": {
+            "type": "integer",
+            "description": "How many of the 12 grid columns this takes.",
+            "minimum": 1,
+            "maximum": 12,
+            "default": 6
+          },
+          "align": {
+            "type": "string",
+            "description": "Vertical alignment of this column within the row.",
+            "enum": [
+              "auto",
+              "start",
+              "center",
+              "end"
+            ],
+            "default": "auto"
+          },
+          "padding": {
+            "type": "integer",
+            "description": "Inner padding, on the spacing scale.",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 0
+          },
+          "background": {
+            "type": "string",
+            "description": "Surface behind this column.",
+            "enum": [
+              "none",
+              "paper",
+              "card",
+              "ink",
+              "accent"
+            ],
+            "default": "none"
+          }
+        }
+      }
+    },
+    {
+      "id": "contentArea",
+      "label": "Content area",
+      "category": "layout",
+      "accepts": [],
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "What this area is for, shown in the template editor.",
+            "default": "Page content"
+          }
+        }
+      }
+    }
+  ],
+  "nesting": {
+    "root": {
+      "accepts": [
+        "section",
+        "row",
+        "contentArea",
+        "widget"
+      ]
+    },
+    "section": {
+      "accepts": [
+        "row",
+        "widget"
+      ]
+    },
+    "row": {
+      "accepts": [
+        "column"
+      ]
+    },
+    "column": {
+      "accepts": [
+        "row",
+        "widget"
+      ]
+    },
+    "contentArea": {
+      "accepts": []
+    }
+  },
+  "widgets": [
+    {
       "id": "spacer",
       "label": "Spacer",
-      "category": "layout",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -217,7 +522,8 @@
     {
       "id": "divider",
       "label": "Divider",
-      "category": "layout",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -227,7 +533,8 @@
     {
       "id": "heading",
       "label": "Heading",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -265,7 +572,8 @@
     {
       "id": "text",
       "label": "Text",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -301,7 +609,8 @@
     {
       "id": "image",
       "label": "Image",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -354,7 +663,8 @@
     {
       "id": "buttons",
       "label": "Buttons",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -413,7 +723,8 @@
     {
       "id": "list",
       "label": "Feature list",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -464,7 +775,8 @@
     {
       "id": "customHtml",
       "label": "Custom HTML",
-      "category": "content",
+      "category": "basic",
+      "group": "basic",
       "autoTagged": false,
       "schema": {
         "type": "object",
@@ -482,7 +794,8 @@
     {
       "id": "form",
       "label": "Form",
-      "category": "content",
+      "category": "forms",
+      "group": "forms",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -515,7 +828,8 @@
     {
       "id": "widget",
       "label": "Widget",
-      "category": "widget",
+      "category": "dynamic",
+      "group": "dynamic",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -535,63 +849,10 @@
       }
     },
     {
-      "id": "bar",
-      "label": "Bar",
-      "category": "chrome",
-      "autoTagged": true,
-      "schema": {
-        "type": "object",
-        "properties": {
-          "columns": {
-            "type": "array",
-            "description": "Two or three groups laid out across the bar — typically logo, navigation, and a call to action.",
-            "minItems": 1,
-            "maxItems": 3,
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/contentBlock"
-              }
-            }
-          },
-          "background": {
-            "type": "string",
-            "description": "Bar background.",
-            "enum": [
-              "card",
-              "paper",
-              "ink",
-              "transparent"
-            ],
-            "default": "card"
-          },
-          "sticky": {
-            "type": "boolean",
-            "description": "Keep the bar in view as the page scrolls."
-          },
-          "density": {
-            "type": "string",
-            "description": "Vertical padding.",
-            "enum": [
-              "compact",
-              "regular"
-            ],
-            "default": "regular"
-          },
-          "divider": {
-            "type": "boolean",
-            "description": "Draw a hairline under the bar."
-          }
-        },
-        "required": [
-          "columns"
-        ]
-      }
-    },
-    {
       "id": "logo",
       "label": "Logo",
-      "category": "chrome",
+      "category": "navigation",
+      "group": "navigation",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -644,14 +905,15 @@
     {
       "id": "menu",
       "label": "Menu",
-      "category": "chrome",
+      "category": "navigation",
+      "group": "navigation",
       "autoTagged": true,
       "schema": {
         "type": "object",
         "properties": {
-          "location": {
+          "menuId": {
             "type": "string",
-            "description": "Which menu to show. Use a location id (primary, mobile, footer, legal, utility) so the menu can be swapped from the Menus screen, or a menu id to pin one specific menu."
+            "description": "Which menu to show, by id. Menus are managed on the Menus screen."
           },
           "layout": {
             "type": "string",
@@ -668,24 +930,32 @@
           },
           "align": {
             "type": "string",
-            "description": "Alignment within its cell.",
+            "description": "Alignment within its column.",
             "enum": [
               "start",
               "center",
               "end"
             ],
             "default": "start"
+          },
+          "depth": {
+            "type": "integer",
+            "description": "How many levels to draw. 1 hides submenus.",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 2
           }
         },
         "required": [
-          "location"
+          "menuId"
         ]
       }
     },
     {
       "id": "hero",
       "label": "Hero (full-bleed)",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -784,7 +1054,8 @@
     {
       "id": "splitHero",
       "label": "Split hero (photo)",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -900,7 +1171,8 @@
     {
       "id": "iconGrid",
       "label": "Quick links",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -950,7 +1222,8 @@
     {
       "id": "categoryGrid",
       "label": "Category grid",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1056,7 +1329,8 @@
     {
       "id": "statBand",
       "label": "Stat band",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1142,7 +1416,8 @@
     {
       "id": "serviceGrid",
       "label": "Service grid",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1223,7 +1498,8 @@
     {
       "id": "testimonials",
       "label": "Testimonials",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1279,7 +1555,8 @@
     {
       "id": "logoStrip",
       "label": "Logo strip",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1349,7 +1626,8 @@
     {
       "id": "locationsMap",
       "label": "Locations + map",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",
@@ -1420,7 +1698,8 @@
     {
       "id": "footer",
       "label": "Storefront footer",
-      "category": "section",
+      "category": "prebuilt",
+      "group": "prebuilt",
       "autoTagged": true,
       "schema": {
         "type": "object",

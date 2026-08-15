@@ -1,213 +1,361 @@
-// Template resolution — the Theme Builder semantic, without drag-and-drop.
+// Templates: a reusable layout, and the rules that decide where it applies.
 //
-// Without this there is no way to attach a header or a footer to a page, so a
-// dealer either gets one chrome for everything or hand-edits markup. Resolution
-// is deliberately explainable: `resolveTemplates` returns the winning rule
-// alongside the id, so the dashboard can show "resolving now" and a support
-// engineer can answer "why is this header here" without reading four files.
+// A template is a document like any other — the same node tree a page is — with
+// one extra requirement: somewhere in it sits a `contentArea` node, and that is
+// where the page's own content is injected. Everything else about it is free.
+// Header, hero, sidebar, related products, footer, in whatever arrangement the
+// dealer builds.
+//
+// This replaces a model with two fixed slots, `header` and `footer`, and a
+// page rendered blindly between them. That could not express a sidebar, could
+// not put a hero above the content, and gave the dealer no way to see where
+// their page content would land — the content area was an implicit gap between
+// two fragments rather than a thing on the canvas.
+//
+// Display conditions follow the pattern every builder uses, because it is the
+// one people already know: a template declares what it applies to, the most
+// specific declaration wins, and the winner is reported so "why is this template
+// here" has an answer that does not require reading four files.
+
+import { locateNode, parseDocument } from './nodes.mjs';
+
+export const TEMPLATE_VERSION = 2;
 
 /**
- * The parts of the page that are not the page.
+ * The kinds of thing a template can be attached to.
  *
- * Two, not four. The first version had `utilityNav` and `siteFooter` as separate
- * slots, which was a mistake: a utility bar is a row inside a header template and
- * a secondary footer is a row inside a footer template. Making them slots meant
- * four things to assign, four places to look, and no way to put a utility bar
- * *below* the nav — the layout was baked into the slot list rather than authored.
+ * Adding one is an entry here plus a case in `conditionMatches`. Deliberately
+ * not a hardcoded list of special pages: a home page is a page, and a template
+ * for it is `{ type: 'page', ref: 'home' }` like any other. Special-casing the
+ * home page would be a second mechanism doing what this one already does.
  */
-export const SLOTS = ['header', 'footer'];
+export const CONDITION_TYPES = [
+  {
+    id: 'entireSite',
+    label: 'Entire site',
+    description: 'Every page and post, unless something more specific matches.',
+    ref: null,
+    specificity: 100,
+  },
+  { id: 'allPages', label: 'All pages', description: 'Every page.', ref: null, specificity: 200 },
+  { id: 'allPosts', label: 'All posts', description: 'Every blog post.', ref: null, specificity: 200 },
+  {
+    id: 'blog',
+    label: 'Blog index',
+    description: 'The page that lists your posts.',
+    ref: null,
+    specificity: 300,
+  },
+  {
+    id: 'inventory',
+    label: 'Inventory',
+    description: 'Live inventory browse and detail pages.',
+    ref: null,
+    specificity: 300,
+  },
+  {
+    id: 'pageGroup',
+    label: 'A group of pages',
+    description: 'Every page tagged with one group.',
+    ref: 'group',
+    specificity: 400,
+  },
+  { id: 'page', label: 'A specific page', description: '', ref: 'page', specificity: 500 },
+  { id: 'post', label: 'A specific post', description: '', ref: 'post', specificity: 500 },
+];
 
-/** Higher wins. A tie between two rules of equal specificity is a save-time error. */
-const SPECIFICITY = {
-    page: 500,
-    exact: 400,
-    route: 300,
-    group: 200,
-    pdpType: 200,
-    plp: 200,
-    brand: 200,
-    blog: 200,
-    all: 100,
-};
+const BY_ID = new Map(CONDITION_TYPES.map(c => [c.id, c]));
 
-function matchRoute(pattern, route) {
-  if (!pattern) return false;
-  if (pattern === route) return true;
-  if (!pattern.includes('*')) return false;
-  const rx = new RegExp(
-    '^' +
-      pattern
-        .split('*')
-        .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('.*') +
-      '$',
-  );
-  return rx.test(route);
-}
+/** What a target looks like: `{ kind, slug, group }`. */
+export function conditionMatches(condition, target) {
+  if (!condition || !condition.type) return false;
+  const kind = target.kind || 'page';
 
-/**
- * Does one condition apply to this route?
- *
- * `ctx` describes what the route is, not where it came from: `{ route, group,
- * kind }` where kind is 'page' | 'plp' | 'pdp' | 'brand' and pdpType is
- * 'listings' | 'parts' | 'showrooms'.
- */
-function conditionMatches(condition, ctx) {
   switch (condition.type) {
-    case 'all':
+    case 'entireSite':
       return true;
-    case 'exact':
-      return condition.path === ctx.route;
-    case 'route':
-      return matchRoute(condition.pattern, ctx.route);
-    case 'group':
-      return !!ctx.group && ctx.group === condition.group;
-    case 'plp':
-      return ctx.kind === 'plp';
+    case 'allPages':
+      return kind === 'page';
+    case 'allPosts':
+      return kind === 'post';
     case 'blog':
-      return ctx.kind === 'post' || ctx.kind === 'blog';
-    case 'brand':
-      return ctx.kind === 'brand';
-    case 'pdpType':
-      return ctx.kind === 'pdp' && ctx.pdpType === condition.pdpType;
+      return kind === 'blog';
+    case 'inventory':
+      return kind === 'inventory';
+    case 'pageGroup':
+      return kind === 'page' && !!target.group && target.group === condition.ref;
+    case 'page':
+      return kind === 'page' && target.slug === condition.ref;
+    case 'post':
+      return kind === 'post' && target.slug === condition.ref;
     default:
       return false;
   }
 }
 
-function describe(condition) {
-  switch (condition.type) {
-    case 'all':
-      return 'the whole site';
-    case 'exact':
-      return `the page at ${condition.path}`;
-    case 'route':
-      return `pages matching ${condition.pattern}`;
-    case 'blog':
-      return 'blog posts';
-    case 'group':
-      return `page group "${condition.group}"`;
-    case 'plp':
-      return 'inventory listing pages';
-    case 'brand':
-      return 'brand pages';
-    case 'pdpType':
-      return `${condition.pdpType} product pages`;
-    default:
-      return condition.type;
-  }
+/** A sentence a dealer can read on the template card. */
+export function describeCondition(condition, names = {}) {
+  const type = BY_ID.get(condition?.type);
+  if (!type) return String(condition?.type ?? 'unknown');
+  if (!type.ref) return type.label;
+  const name = names[condition.ref] ?? condition.ref;
+  return `${type.label}: ${name}`;
+}
+
+/* ------------------------------------------------------------------ parse */
+
+function slugFromPath(path) {
+  const base = String(path || '').split('/').pop() || '';
+  return base.replace(/\.json$/, '');
 }
 
 /**
- * Resolve every slot for one route.
+ * Normalise one template file.
  *
- * Order, first match wins:
- *   1. explicit page-level override (pages.json -> templates{})
- *   2. most specific matching display condition (assignments.json -> rules)
- *   3. the channel default for that slot (assignments.json -> defaults)
- *   4. the renderer default, which ships with the package and cannot be missing
- *
- * Returns `{ slot: { templateId, rule, ruleLabel, conflict } }`. A conflict is
- * two equally specific rules naming different templates: reported rather than
- * silently picked, because a silent pick is unexplainable a month later.
+ * Recognises the v1 slot fragments (`{ slot: 'header' | 'footer', blocks }`) and
+ * marks them, so `parseTemplates` can fold a header/footer pair into one real
+ * template rather than leaving a repo with two halves and no whole.
  */
-export function resolveTemplates(routeCtx, pageEntry, assignments = {}) {
-  const rules = Array.isArray(assignments.rules) ? assignments.rules : [];
-  const defaults = assignments.defaults || {};
-  const out = {};
+export function parseTemplate(raw, fallbackId) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.id || fallbackId || '').trim();
+  if (!id) return null;
 
-  for (const slot of SLOTS) {
-    const override = pageEntry && pageEntry.templates ? pageEntry.templates[slot] : null;
-    if (override) {
-      out[slot] = { templateId: override, rule: 'page', ruleLabel: 'page-level override', conflict: null };
-      continue;
-    }
+  const legacySlot = raw.slot === 'header' || raw.slot === 'footer' ? raw.slot : null;
+  const document = parseDocument(raw);
 
-    const matches = rules
-      .filter((r) => r.slot === slot && r.condition && conditionMatches(r.condition, routeCtx))
-      .map((r) => ({ ...r, weight: SPECIFICITY[r.condition.type] ?? 0 }))
-      .sort((a, b) => b.weight - a.weight);
+  return {
+    version: TEMPLATE_VERSION,
+    id,
+    name: String(raw.name || id),
+    conditions: normaliseConditions(raw.conditions),
+    nodes: document.nodes,
+    legacySlot,
+  };
+}
 
-    if (matches.length) {
-      const top = matches[0];
-      const tied = matches.filter(
-        (m) => m.weight === top.weight && m.templateId !== top.templateId,
-      );
-      out[slot] = {
-        templateId: top.templateId,
-        rule: 'condition',
-        ruleLabel: describe(top.condition),
-        conflict: tied.length
-          ? `${tied.length + 1} equally specific rules (${describe(top.condition)}) name different templates`
-          : null,
-      };
-      continue;
-    }
-
-    if (defaults[slot]) {
-      out[slot] = {
-        templateId: defaults[slot],
-        rule: 'channelDefault',
-        ruleLabel: 'channel default',
-        conflict: null,
-      };
-      continue;
-    }
-
-    // Nothing assigned. The site still needs a header and a footer, so the
-    // starter template the dealer's site was created with is used, and the label
-    // says so rather than saying "shipped default", which meant nothing to
-    // anyone who had not read this file.
-    out[slot] = {
-      templateId: `${slot}--default`,
-      rule: 'starter',
-      ruleLabel: `your starter ${slot}`,
-      conflict: null,
-    };
+function normaliseConditions(raw) {
+  const out = [];
+  for (const entry of Array.isArray(raw) ? raw : []) {
+    if (!entry || !BY_ID.has(entry.type)) continue;
+    const type = BY_ID.get(entry.type);
+    out.push({ type: entry.type, ref: type.ref ? String(entry.ref ?? '') : null });
   }
   return out;
 }
 
 /**
- * Every distinct chrome combination a set of routes resolves to, keyed so the
- * build can emit one pre-rendered fragment per combination and the storefront
- * can pick one by route. `default` is always present: a storefront must never
- * render chromeless because a manifest entry is missing.
+ * Read every template file into a usable set.
+ *
+ * The migration matters more than it looks. A repo written under the slot model
+ * has `header--default.json` and `footer--default.json` and nothing that knows
+ * they belong together. Left alone, such a site would open in the new editor
+ * with two templates, neither of which has a content area, and the dealer's
+ * pages would render with no chrome at all. So the halves are composed into one
+ * template — header nodes, a content area, footer nodes — which is exactly what
+ * the site was already rendering, now as something that can be edited.
  */
-export function chromeCombinations(routes, pages, assignments) {
-  const combos = new Map();
-  const table = [];
-
-  const keyOf = (resolved) =>
-    SLOTS.map((s) => resolved[s].templateId)
-      .join('|')
-      .replace(/[^a-z0-9|-]/gi, '-')
-      .replace(/\|/g, '__');
-
-  // The default combination is resolved first and every route that lands on the
-  // same set of templates is folded into it, so the common case — one chrome for
-  // the whole site — emits one fragment rather than one per route.
-  const defaultRoute = routes.find((r) => r.isDefault) || { route: '/', kind: 'page' };
-  const defaultResolved = resolveTemplates(
-    defaultRoute,
-    (pages || []).find((p) => p.path === defaultRoute.route) || null,
-    assignments,
-  );
-  const defaultKey = keyOf(defaultResolved);
-  combos.set('default', defaultResolved);
-
-  for (const route of routes) {
-    const pageEntry = (pages || []).find((p) => p.path === route.route) || null;
-    const resolved = resolveTemplates(route, pageEntry, assignments);
-    const raw = keyOf(resolved);
-    const key = raw === defaultKey ? 'default' : raw;
-    if (!combos.has(key)) combos.set(key, resolved);
-    table.push({ pattern: route.pattern || route.route, chrome: key });
+export function parseTemplates(files) {
+  const parsed = [];
+  for (const [path, raw] of Object.entries(files || {})) {
+    const template = parseTemplate(raw, slugFromPath(path));
+    if (template) parsed.push(template);
   }
-  return { combos, table };
+
+  const modern = parsed.filter(t => !t.legacySlot);
+  const legacy = parsed.filter(t => t.legacySlot);
+  if (!legacy.length) return modern;
+
+  const header = legacy.find(t => t.legacySlot === 'header');
+  const footer = legacy.find(t => t.legacySlot === 'footer');
+  const composed = {
+    version: TEMPLATE_VERSION,
+    id: 'default',
+    name: 'Site template',
+    conditions: [{ type: 'entireSite', ref: null }],
+    nodes: [
+      ...(header ? header.nodes : []),
+      { id: 'content', type: 'contentArea', props: { label: 'Page content' } },
+      ...(footer ? footer.nodes : []),
+    ],
+    legacySlot: null,
+    migratedFrom: legacy.map(t => t.id),
+  };
+
+  // A modern template already named `default` wins: the dealer has edited it,
+  // and re-composing the fragments it replaced would undo that on every load.
+  return modern.some(t => t.id === 'default') ? modern : [...modern, composed];
 }
 
-/** Filename for a template file, mirroring `site/templates/<slot>--<name>.json`. */
-export function templatePath(templateId) {
-  return `site/templates/${templateId}.json`;
+/* --------------------------------------------------------------- resolve */
+
+/**
+ * Which template applies to one target.
+ *
+ * Returns the winner, the condition that won, and any conflict — two equally
+ * specific conditions naming different templates. Reported rather than silently
+ * picked, because a silent pick is unexplainable a month later.
+ */
+export function resolveTemplate(target, templates) {
+  const matches = [];
+  for (const template of templates || []) {
+    for (const condition of template.conditions || []) {
+      if (!conditionMatches(condition, target)) continue;
+      matches.push({
+        template,
+        condition,
+        weight: BY_ID.get(condition.type)?.specificity ?? 0,
+      });
+    }
+  }
+  if (!matches.length) return { template: null, condition: null, label: 'no template', conflict: null };
+
+  matches.sort((a, b) => b.weight - a.weight);
+  const top = matches[0];
+  const tied = matches.filter(m => m.weight === top.weight && m.template.id !== top.template.id);
+
+  return {
+    template: top.template,
+    condition: top.condition,
+    label: describeCondition(top.condition),
+    conflict: tied.length
+      ? `${tied.length + 1} equally specific conditions name different templates (${[
+          top.template.name,
+          ...tied.map(t => t.template.name),
+        ].join(', ')})`
+      : null,
+  };
+}
+
+/* --------------------------------------------------------------- compose */
+
+/** Where the content area sits, if it does. */
+export function findContentArea(nodes) {
+  let found = null;
+  const step = (list, parent) => {
+    for (const node of list || []) {
+      if (!node || typeof node !== 'object') continue;
+      if (node.type === 'contentArea' && !found) found = { node, parent };
+      if (Array.isArray(node.children)) step(node.children, node);
+    }
+  };
+  step(nodes, null);
+  return found;
+}
+
+export function hasContentArea(nodes) {
+  return !!findContentArea(nodes);
+}
+
+/**
+ * The template with the page's own nodes in place of its content area.
+ *
+ * A template with no content area still renders — with the page appended, which
+ * is the least surprising fallback and matches what the slot model did. The
+ * editor refuses to save a template without one, so this path is only reached by
+ * a file edited outside the builder.
+ */
+export function composeDocument(templateNodes, pageNodes, opts = {}) {
+  const nodes = JSON.parse(JSON.stringify(templateNodes || []));
+  const content = JSON.parse(JSON.stringify(pageNodes || []));
+
+  const replaced = substitute(nodes, content, opts);
+  if (replaced) return nodes;
+
+  if (opts.warn) {
+    opts.warn('This template has no content area, so the page content was appended to the end of it.');
+  }
+  return [...nodes, ...content];
+}
+
+function substitute(list, content, opts) {
+  for (let i = 0; i < list.length; i++) {
+    const node = list[i];
+    if (!node || typeof node !== 'object') continue;
+    if (node.type === 'contentArea') {
+      // Marked rather than merely replaced: the editor needs to know which
+      // stretch of the composed tree is the page, so it can make exactly that
+      // part editable and lock the rest.
+      const marked = opts.mark
+        ? content.map(child => ({ ...child, __region: 'content' }))
+        : content;
+      list.splice(i, 1, ...marked);
+      return true;
+    }
+    if (Array.isArray(node.children) && substitute(node.children, content, opts)) return true;
+  }
+  return false;
+}
+
+/**
+ * The template split around its content area.
+ *
+ * The storefront needs a header fragment and a footer fragment to wrap live
+ * inventory in the dealer's chrome, and this is where they come from now: what
+ * precedes the content area is the header, what follows it is the footer. That
+ * is the same answer the two-slot model gave, derived rather than declared —
+ * which is what lets a dealer put a hero or a breadcrumb bar in either half
+ * without the storefront needing to know.
+ */
+export function splitAtContentArea(nodes) {
+  const before = [];
+  const after = [];
+  let seen = false;
+
+  const step = list => {
+    for (const node of list || []) {
+      if (!node || typeof node !== 'object') continue;
+      if (node.type === 'contentArea') {
+        seen = true;
+        continue;
+      }
+      // Only the top level is split. A content area nested inside a column means
+      // the surrounding layout cannot be cut in two without breaking the grid, so
+      // that template contributes its whole self to the header and an empty
+      // footer — visibly wrong on the storefront rather than subtly wrong.
+      (seen ? after : before).push(node);
+    }
+  };
+  step(nodes);
+  return { before, after, found: seen };
+}
+
+/** File path for a template. */
+export function templatePath(id) {
+  return `site/templates/${id}.json`;
+}
+
+/** A new, valid template: something to edit rather than an empty canvas. */
+export function starterTemplate(id = 'default', name = 'Site template') {
+  return {
+    version: TEMPLATE_VERSION,
+    id,
+    name,
+    conditions: [{ type: 'entireSite', ref: null }],
+    nodes: [
+      {
+        id: 'header',
+        type: 'section',
+        props: { width: 'boxed', paddingY: 4, background: 'card' },
+        children: [
+          {
+            id: 'header-row',
+            type: 'row',
+            props: { gap: 6, align: 'center' },
+            children: [
+              { id: 'header-brand', type: 'column', props: { span: 3 }, children: [] },
+              { id: 'header-nav', type: 'column', props: { span: 9, align: 'center' }, children: [] },
+            ],
+          },
+        ],
+      },
+      { id: 'content', type: 'contentArea', props: { label: 'Page content' } },
+      {
+        id: 'footer',
+        type: 'section',
+        props: { width: 'boxed', paddingY: 7, background: 'ink' },
+        children: [],
+      },
+    ],
+  };
 }

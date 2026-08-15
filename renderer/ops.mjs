@@ -1,51 +1,52 @@
-// Patch operations against a page's block list.
+// Patch operations against a document tree.
 //
-// The AI returns operations, not a tree, so an edit to one block leaves every
-// other block byte-identical. That property only holds if there is exactly one
-// implementation of "apply an operation" — the plugin applies ops server-side
-// before committing, and the dashboard applies the same ops to show the result
-// immediately. Two implementations would diverge on the first edge case.
+// The AI returns operations, not a tree, so an edit to one node leaves every
+// other node byte-identical. That property only holds if there is exactly one
+// implementation of "apply an operation": the plugin validates ops before
+// committing, the dashboard applies the same ops to show the result immediately,
+// and the editor's own drag-and-drop goes through them too. Three callers, one
+// implementation — the alternative is three subtly different trees.
+//
+// Every operation names a parent and an index. That is the change the old
+// version needed and could not express: `addToColumn` existed because a column
+// was not a node, and `move` always landed at the top level because there was
+// nowhere else it could land. With a real tree, insert and move are the same
+// two coordinates, and dragging a heading from one column into another is one
+// operation rather than a remove and an add that lose the node's id in between.
 
-import { parsePage } from './page.mjs';
+import { accepts, locateNode, parseDocument } from './nodes.mjs';
 
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
-/** Find a block by id anywhere in the tree, with the list that holds it. */
-function locate(blocks, id) {
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i];
-    if (!block || typeof block !== 'object') continue;
-    if (block.id === id) return { list: blocks, index: i, block };
-    const cols = block.props && block.props.columns;
-    if (Array.isArray(cols)) {
-      for (const col of cols) {
-        if (!Array.isArray(col)) continue;
-        const hit = locate(col, id);
-        if (hit) return hit;
-      }
-    }
-  }
-  return null;
-}
-
-function insert(list, block, afterId) {
-  if (afterId == null) {
-    list.unshift(block);
-    return;
-  }
-  const at = list.findIndex((b) => b && b.id === afterId);
-  if (at === -1) list.push(block);
-  else list.splice(at + 1, 0, block);
+function isObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 /**
- * Merge a patch into a block's props.
+ * The children list a parent id refers to, creating it if the parent is a
+ * container that has never held anything.
+ */
+function childrenOf(doc, parentId) {
+  if (parentId == null) return { list: doc.nodes, type: null };
+  const hit = locateNode(doc.nodes, parentId);
+  if (!hit) return null;
+  if (!Array.isArray(hit.node.children)) hit.node.children = [];
+  return { list: hit.node.children, type: hit.node.type };
+}
+
+function insertAt(list, node, index) {
+  const at = Number.isInteger(index) && index >= 0 && index <= list.length ? index : list.length;
+  list.splice(at, 0, node);
+}
+
+/**
+ * Merge a patch into a node's props.
  *
- * Shallow by design at the top level, but arrays replace wholesale: a patch that
- * sets `items` means "these items now", and merging arrays element-wise would
- * make "remove the third card" impossible to express.
+ * Shallow at the top level, but arrays replace wholesale: a patch that sets
+ * `items` means "these items now", and merging element-wise would make "remove
+ * the third card" impossible to express. `null` deletes the key.
  */
 function mergeProps(current, patch) {
   const out = { ...(current || {}) };
@@ -54,14 +55,7 @@ function mergeProps(current, patch) {
       delete out[key];
       continue;
     }
-    if (
-      value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      out[key] &&
-      typeof out[key] === 'object' &&
-      !Array.isArray(out[key])
-    ) {
+    if (isObject(value) && isObject(out[key])) {
       out[key] = { ...out[key], ...value };
       continue;
     }
@@ -70,100 +64,195 @@ function mergeProps(current, patch) {
   return out;
 }
 
+/** Every id in a live tree, so an insert can be checked for collisions. */
+function idsIn(nodes) {
+  const ids = new Set();
+  const step = list => {
+    for (const node of list || []) {
+      if (!isObject(node)) continue;
+      if (node.id) ids.add(node.id);
+      if (Array.isArray(node.children)) step(node.children);
+    }
+  };
+  step(nodes);
+  return ids;
+}
+
+/** Would moving `id` into `parentId` put a node inside itself? */
+function isDescendant(nodes, ancestorId, candidateId) {
+  const hit = locateNode(nodes, ancestorId);
+  if (!hit) return false;
+  let found = false;
+  const step = list => {
+    for (const node of list || []) {
+      if (!isObject(node)) continue;
+      if (node.id === candidateId) found = true;
+      if (Array.isArray(node.children)) step(node.children);
+    }
+  };
+  step(hit.node.children);
+  return found;
+}
+
 /**
- * Apply a list of operations to a page.
+ * Apply a list of operations to a document.
  *
- * Returns `{ page, applied, rejected }`. An operation naming a block that does
- * not exist is rejected and reported rather than silently dropped — a model that
- * hallucinated an id needs to be told, and the dealer needs to know their edit
- * only half landed.
+ * Returns `{ document, applied, rejected }`. An operation naming a node that
+ * does not exist, or one that would nest a row inside a row, is rejected and
+ * reported rather than silently dropped: a model that hallucinated an id needs
+ * to be told, and a dealer needs to know their edit only half landed.
  */
-export function applyOps(pageJson, ops) {
-  const page = clone(parsePage(pageJson));
+export function applyOps(raw, ops) {
+  const document = parseDocument(clone(raw));
   const applied = [];
   const rejected = [];
-  const reject = (op, why) => rejected.push({ op, reason: why });
+  const reject = (op, reason) => rejected.push({ op, reason });
 
   for (const op of ops || []) {
-    if (!op || typeof op !== 'object') {
+    if (!isObject(op)) {
       reject(op, 'not an operation object');
       continue;
     }
+
     switch (op.op) {
-      case 'add': {
-        if (!op.block || !op.block.id || !op.block.type) {
-          reject(op, 'add needs a block with an id and a type');
+      case 'insert': {
+        const node = clone(op.node);
+        if (!node || !node.type) {
+          reject(op, 'insert needs a node with a type');
           break;
         }
-        if (locate(page.blocks, op.block.id)) {
-          reject(op, `block id "${op.block.id}" already exists`);
+        const target = childrenOf(document, op.parentId ?? null);
+        if (!target) {
+          reject(op, `parent "${op.parentId}" not found`);
           break;
         }
-        insert(page.blocks, clone(op.block), op.afterId ?? null);
+        if (!accepts(target.type, node.type)) {
+          reject(
+            op,
+            `a ${node.type} cannot go inside ${target.type ? `a ${target.type}` : 'the page'}`,
+          );
+          break;
+        }
+        const taken = idsIn(document.nodes);
+        if (node.id && taken.has(node.id)) {
+          reject(op, `node id "${node.id}" already exists`);
+          break;
+        }
+        insertAt(target.list, node, op.index);
         applied.push(op);
         break;
       }
-      case 'addToColumn': {
-        const row = locate(page.blocks, op.rowId);
-        if (!row) {
-          reject(op, `row "${op.rowId}" not found`);
+
+      case 'move': {
+        const hit = locateNode(document.nodes, op.id);
+        if (!hit) {
+          reject(op, `node "${op.id}" not found`);
           break;
         }
-        const cols = row.block.props && row.block.props.columns;
-        const index = Number(op.columnIndex) || 0;
-        if (!Array.isArray(cols) || !Array.isArray(cols[index])) {
-          reject(op, `row "${op.rowId}" has no column ${index}`);
+        const parentId = op.parentId ?? null;
+        if (parentId === op.id || (parentId && isDescendant(document.nodes, op.id, parentId))) {
+          reject(op, `"${op.id}" cannot be moved inside itself`);
           break;
         }
-        if (!op.block || !op.block.id) {
-          reject(op, 'addToColumn needs a block with an id');
+        const target = childrenOf(document, parentId);
+        if (!target) {
+          reject(op, `parent "${parentId}" not found`);
           break;
         }
-        if (locate(page.blocks, op.block.id)) {
-          reject(op, `block id "${op.block.id}" already exists`);
+        if (!accepts(target.type, hit.node.type)) {
+          reject(
+            op,
+            `a ${hit.node.type} cannot go inside ${target.type ? `a ${target.type}` : 'the page'}`,
+          );
           break;
         }
-        insert(cols[index], clone(op.block), op.afterId ?? null);
+        // `index` is where the node ENDS UP, counted after it has been taken out
+        // of wherever it was. Stated that way rather than as a position in the
+        // list-before-the-move because the AI writes these by hand: "put it third"
+        // should mean third, not third-minus-one-if-it-was-already-above-there.
+        hit.list.splice(hit.index, 1);
+        insertAt(target.list, hit.node, op.index);
         applied.push(op);
         break;
       }
+
       case 'update': {
-        const hit = locate(page.blocks, op.id);
+        const hit = locateNode(document.nodes, op.id);
         if (!hit) {
-          reject(op, `block "${op.id}" not found`);
+          reject(op, `node "${op.id}" not found`);
           break;
         }
-        hit.block.props = mergeProps(hit.block.props, op.patch);
+        hit.node.props = mergeProps(hit.node.props, op.props ?? op.patch);
         applied.push(op);
         break;
       }
+
       case 'remove': {
-        const hit = locate(page.blocks, op.id);
+        const hit = locateNode(document.nodes, op.id);
         if (!hit) {
-          reject(op, `block "${op.id}" not found`);
+          reject(op, `node "${op.id}" not found`);
           break;
         }
         hit.list.splice(hit.index, 1);
         applied.push(op);
         break;
       }
-      case 'move': {
-        const hit = locate(page.blocks, op.id);
+
+      /**
+       * Put a node inside a new container — the operation a builder needs for
+       * "make this two columns". Expressing it as remove + insert would lose the
+       * node's identity, and with it its history and anything referring to it.
+       */
+      case 'wrap': {
+        const hit = locateNode(document.nodes, op.id);
         if (!hit) {
-          reject(op, `block "${op.id}" not found`);
+          reject(op, `node "${op.id}" not found`);
           break;
         }
-        const [moved] = hit.list.splice(hit.index, 1);
-        // A move always lands at the top level: moving a block into or out of a
-        // column changes what it is allowed to be, so that is an explicit
-        // remove + add rather than a silent reparent.
-        insert(page.blocks, moved, op.afterId ?? null);
+        const wrapper = clone(op.node);
+        if (!wrapper || !wrapper.type) {
+          reject(op, 'wrap needs a container node');
+          break;
+        }
+        const slot = findEmptySlot(wrapper);
+        if (!slot) {
+          reject(op, `"${wrapper.type}" has nowhere to put the wrapped node`);
+          break;
+        }
+        if (!accepts(slot.type, hit.node.type)) {
+          reject(op, `a ${hit.node.type} cannot go inside a ${slot.type}`);
+          break;
+        }
+        slot.children.push(hit.node);
+        hit.list.splice(hit.index, 1, wrapper);
         applied.push(op);
         break;
       }
+
       default:
         reject(op, `unknown operation "${op.op}"`);
     }
   }
-  return { page, applied, rejected };
+
+  return { document, applied, rejected };
+}
+
+/**
+ * The deepest first child of a wrapper that can hold content.
+ *
+ * "Wrap this in two columns" means a row whose *first column* takes the node,
+ * not the row itself — the row cannot hold a heading at all.
+ */
+function findEmptySlot(wrapper) {
+  let current = wrapper;
+  while (current) {
+    if (!Array.isArray(current.children)) current.children = [];
+    const first = current.children[0];
+    if (first && Array.isArray(first.children) && !first.children.length) {
+      current = first;
+      continue;
+    }
+    return current;
+  }
+  return null;
 }

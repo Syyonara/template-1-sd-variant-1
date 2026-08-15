@@ -25,6 +25,13 @@
 //  3. The markup is stripped of scripts, event handlers and javascript: URLs when
 //     the definition is parsed — before it is ever committed — and again here.
 //
+// A custom widget is a LEAF. It has no drop targets of its own, because nesting
+// is the layout system's job: a section holds rows, a row holds columns, and a
+// column holds widgets. An earlier version let a widget declare `data-bz-slot`
+// holes, which meant two unrelated nesting mechanisms — one the editor
+// understood as containers and one it had to special-case — and a widget whose
+// children were wiped every time one of its props changed.
+//
 // Zero dependencies, like the rest of the renderer.
 
 import { esc, href, image } from './html.mjs';
@@ -362,34 +369,18 @@ function scalar(value) {
 
 /* ------------------------------------------------------------------- slots */
 
-const SLOT_TAG_RE = /<([a-z][a-z0-9-]*)((?:[^<>"']|"[^"]*"|'[^']*')*?)data-bz-slot=["'](\d+)["']((?:[^<>"']|"[^"]*"|'[^']*')*)>/gi;
+const SLOT_RE = /data-bz-slot\s*=/i;
 
 /**
- * Fill declared slots with rendered children.
+ * Does this template still declare drop targets?
  *
- * The slot element is written empty in the template; children are injected right
- * after its opening tag. Index-keyed and stored in `props.columns`, which is the
- * same shape `row` and `bar` already use — so the editor's drop handling, the
- * validator's nesting rules and the AI's `addToColumn` operation all work on a
- * custom widget with no special case anywhere.
+ * Reported as an error rather than ignored. A template with a slot in it was
+ * authored against a model where a widget could hold children; leaving the
+ * attribute in silently would render an empty div where the author expected
+ * content, which is the failure that looks like the widget is broken.
  */
-function fillSlots(html, columns, ctx, renderChildren) {
-  if (!renderChildren) return html;
-  return html.replace(SLOT_TAG_RE, (match, tag, before, index, after) => {
-    const children = Array.isArray(columns) ? columns[Number(index)] : null;
-    const inner = Array.isArray(children) ? renderChildren(children, ctx) : '';
-    return `<${tag}${before}data-bz-slot="${index}"${after}>${inner}`;
-  });
-}
-
-/** How many slots a template declares. */
-export function countSlots(html) {
-  const seen = new Set();
-  String(html || '').replace(SLOT_TAG_RE, (_m, _t, _b, index) => {
-    seen.add(Number(index));
-    return '';
-  });
-  return seen.size;
+export function declaresSlots(html) {
+  return SLOT_RE.test(String(html || ''));
 }
 
 /* -------------------------------------------------------------- definition */
@@ -436,7 +427,11 @@ export function parseWidgetDefinition(raw, fallbackId) {
     errors.push(`template: ${err.message}`);
   }
 
-  const slots = countSlots(html);
+  if (html && declaresSlots(html)) {
+    errors.push(
+      'this template declares data-bz-slot. Widgets are leaves — build the layout from a section, a row and columns instead, and put this widget in a column.',
+    );
+  }
 
   return {
     definition: errors.length
@@ -449,7 +444,6 @@ export function parseWidgetDefinition(raw, fallbackId) {
           category,
           origin,
           props,
-          slots,
           html,
           css,
           // Recorded rather than computed at render time so the editor can warn
@@ -562,15 +556,6 @@ export function widgetSchema(definition) {
     if (prop.required) required.push(prop.key);
   }
 
-  if (definition.slots > 0) {
-    properties.columns = {
-      type: 'array',
-      description: `Content dropped into this widget's ${definition.slots} slot(s), one list per slot.`,
-      maxItems: definition.slots,
-      items: { type: 'array', items: { $ref: '#/definitions/contentBlock' } },
-    };
-  }
-
   return { type: 'object', properties, ...(required.length ? { required } : {}) };
 }
 
@@ -632,9 +617,6 @@ export function defaultProps(definition) {
     else if (prop.type === 'select') out[prop.key] = prop.options?.[0]?.value ?? '';
     else out[prop.key] = prop.label;
   }
-  if (definition.slots > 0) {
-    out.columns = Array.from({ length: definition.slots }, () => []);
-  }
   return out;
 }
 
@@ -659,15 +641,12 @@ export function compileWidget(definition) {
     custom: true,
     origin: definition.origin,
     autoTagged: definition.autoTagged !== false,
-    slots: definition.slots,
     props: definition.props,
     schema: widgetSchema(definition),
     css: scopeCss(definition.css, scope),
     defaults: defaultProps(definition),
-    render(props, ctx, block, renderChildren) {
-      const scopes = [{ value: props || {} }];
-      const html = renderNodes(nodes, scopes, ctx || {});
-      return fillSlots(html, props && props.columns, ctx, renderChildren);
+    render(props, ctx) {
+      return renderNodes(nodes, [{ value: props || {} }], ctx || {});
     },
   };
 }
@@ -700,7 +679,6 @@ export function emptyDefinition(id, label) {
     category: 'content',
     origin: 'user',
     props: [],
-    slots: 0,
     html: '<div class="wrap"><p>{{text}}</p></div>',
     css: '',
   };

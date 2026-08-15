@@ -21,17 +21,18 @@ import { fileURLToPath } from 'node:url';
 
 import {
   RENDERER_VERSION,
-  chromeCombinations,
   compileTokens,
   compileTokenScope,
-  fontsHref,
-  injectMenus,
-  renderPage,
-  renderShell,
-  registerCustomWidgets,
+  composeDocument,
   customWidgetCss,
-  resolveTemplates,
-  SLOTS,
+  fontsHref,
+  parseDocument,
+  parseTemplates,
+  registerCustomWidgets,
+  renderDocument,
+  renderShell,
+  resolveTemplate,
+  splitAtContentArea,
 } from '../renderer/index.mjs';
 
 const ROOT = process.cwd();
@@ -147,38 +148,71 @@ const renderCtx = {
   warn,
 };
 
+/* ---------------------------------------------------------------- templates */
+// A template is a full layout with a content area in it. The page's own nodes go
+// where that content area sits, and what precedes and follows it become the
+// header and footer fragments the storefront reuses. Nothing about the header or
+// footer is declared — both are derived from where the dealer put the content
+// area, which is what lets a template carry a hero above the content or a
+// sidebar beside it without anything downstream needing to know.
+
+const templates = parseTemplates(
+  existsSync(join(SITE, 'templates'))
+    ? Object.fromEntries(
+        readdirSync(join(SITE, 'templates'))
+          .filter((f) => f.endsWith('.json'))
+          .map((f) => [f, readJson(join(SITE, 'templates', f))]),
+      )
+    : {},
+);
+
 /**
- * Chrome for a slot. A template file (`site/templates/<slot>--<name>.json`) is a
- * block list, so header and footer are authored with the same blocks a page is —
- * one editor, one renderer, one set of tagging rules.
+ * Render one page inside the template that claims it.
  *
- * The shipped default falls back to the hand-authored fragments in site/chrome/,
- * which is what every repo has before templates are used.
+ * Returns the three fragments the document shell wants. The split keeps the
+ * header out of `<main>`, which matters for landmarks and for the storefront,
+ * and is only possible when the content area sits at the template's top level.
+ * When it is nested inside a column — a sidebar layout — the whole composed tree
+ * goes into the body, because cutting it in two there would break the grid.
  */
-function renderSlot(slot, templateId) {
-  const path = join(SITE, 'templates', `${templateId}.json`);
-  if (existsSync(path)) {
-    // A template is a block list, so the header is rendered by the same code the
-    // page is — and edited in the same canvas.
-    return injectMenus(renderPage(readJson(path), renderCtx), menus, renderCtx);
+function renderWithTemplate(target, nodes) {
+  const resolved = resolveTemplate(target, templates);
+  if (resolved.conflict) warn(resolved.conflict);
+  if (!resolved.template) {
+    return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', resolved };
   }
-  // Repos provisioned before templates existed still carry hand-written chrome.
-  // They keep working; the first edit in the editor writes a template instead.
-  const legacy = join(SITE, 'chrome', `${slot}.html`);
-  if (existsSync(legacy)) return injectMenus(readText(legacy), menus, renderCtx);
-  return '';
+
+  const { before, after, found } = splitAtContentArea(resolved.template.nodes);
+  if (!found) {
+    const composed = composeDocument(resolved.template.nodes, nodes, { warn });
+    return { header: '', body: renderDocument({ nodes: composed }, renderCtx), footer: '', resolved };
+  }
+  return {
+    header: renderDocument({ nodes: before }, renderCtx),
+    body: renderDocument({ nodes }, renderCtx),
+    footer: renderDocument({ nodes: after }, renderCtx),
+    resolved,
+  };
 }
 
+/** The header/footer pair for a target, cached per template. */
 const chromeCache = new Map();
-function chromeFor(resolved) {
-  const key = SLOTS.map((s) => resolved[s].templateId).join('|');
+function chromeFor(target) {
+  const resolved = resolveTemplate(target, templates);
+  const key = resolved.template ? resolved.template.id : 'none';
   if (!chromeCache.has(key)) {
-    for (const slot of SLOTS) {
-      if (resolved[slot].conflict) warn(`${slot}: ${resolved[slot].conflict}`);
+    const { before, after, found } = resolved.template
+      ? splitAtContentArea(resolved.template.nodes)
+      : { before: [], after: [], found: false };
+    if (resolved.template && !found) {
+      warn(
+        `Template "${resolved.template.name}" has its content area nested inside a column, so the storefront cannot reuse its chrome.`,
+      );
     }
     chromeCache.set(key, {
-      header: renderSlot('header', resolved.header.templateId),
-      footer: renderSlot('footer', resolved.footer.templateId),
+      id: key,
+      header: renderDocument({ nodes: before }, renderCtx),
+      footer: renderDocument({ nodes: after }, renderCtx),
     });
   }
   return chromeCache.get(key);
@@ -215,16 +249,28 @@ write('scripts/widgets.js', widgetsJs);
 //         draft     -> emitted (so previews work) but noindex and excluded
 //         archived  -> not emitted at all
 
-function pageBody(dir, slug) {
+/**
+ * A page's own content, as nodes.
+ *
+ * `page.json` is the current form and is parsed — which migrates a v1 block list
+ * on the way through. `body.html` is still read when there is no page.json, so
+ * repos written before the block model keep building; that markup is carried as
+ * a `customHtml` node so it goes through the same composition path as everything
+ * else rather than needing a second branch at every call site.
+ */
+function pageNodes(dir, slug) {
   const pageJsonPath = join(dir, 'page.json');
   if (existsSync(pageJsonPath)) {
-    const html = renderPage(readJson(pageJsonPath), renderCtx);
-    if (!html) warn(`page "${slug}" has a page.json with no renderable blocks`);
-    return { html, source: 'blocks' };
+    const nodes = parseDocument(readJson(pageJsonPath)).nodes;
+    if (!nodes.length) warn(`page "${slug}" has a page.json with nothing in it`);
+    return nodes;
   }
   const body = readText(join(dir, 'body.html'));
-  if (!body) warn(`page "${slug}" has neither page.json nor body.html`);
-  return { html: body, source: 'html' };
+  if (!body) {
+    warn(`page "${slug}" has neither page.json nor body.html`);
+    return [];
+  }
+  return [{ id: 'legacy-body', type: 'customHtml', props: { html: body } }];
 }
 
 const emitted = [];
@@ -233,7 +279,7 @@ for (const p of pages) {
   if (status === 'archived') continue;
 
   const dir = join(SITE, 'pages', p.dir);
-  const { html: body } = pageBody(dir, p.slug);
+  const nodes = pageNodes(dir, p.slug);
   const css = readText(join(dir, 'style.css'));
 
   let pageJs = null;
@@ -242,7 +288,8 @@ for (const p of pages) {
     write(`scripts/pages/${p.dir}.js`, readText(join(dir, 'script.js')));
   }
 
-  const resolved = resolveTemplates({ route: p.path, kind: 'page', group: p.group }, p, assignments);
+  const target = { kind: 'page', slug: p.slug, group: p.group };
+  const rendered = renderWithTemplate(target, nodes);
   const noindex = status !== 'published' || !!(p.seo && p.seo.noindex);
 
   write(
@@ -250,12 +297,12 @@ for (const p of pages) {
     renderShell({
       config,
       fontsHref: FONTS_HREF,
-      chrome: chromeFor(resolved),
+      chrome: { header: rendered.header, footer: rendered.footer },
       storefrontPrefix: PREFIX,
       title: p.title,
       description: p.description || config.seo.defaultDescription,
       canonical: config.url + p.path,
-      bodyHtml: body,
+      bodyHtml: rendered.body,
       pageCss: css,
       pageJs,
       ogImage: p.seo && p.seo.ogImage,
@@ -263,13 +310,11 @@ for (const p of pages) {
       tokenScopes: p.tokenScope ? [p.tokenScope] : [],
     }),
   );
-  emitted.push({ ...p, status, noindex, resolved });
+  emitted.push({ ...p, status, noindex, template: rendered.resolved.template?.id ?? null });
 }
 
 const indexable = emitted.filter((p) => !p.noindex);
-const defaultChrome = chromeFor(
-  resolveTemplates({ route: '/', kind: 'page' }, pages.find((p) => p.path === '/') || null, assignments),
-);
+const defaultChrome = chromeFor({ kind: 'inventory' });
 
 /* ----------------------------------------------------------------- partials */
 // Everything the Remix storefront needs to render inventory inside this site's
@@ -286,50 +331,6 @@ write('partials/widgets.js', widgetsJs);
 write('partials/reset.css', resetCss);
 write('partials/tokens.css', tokensCss);
 write('partials/fonts.txt', FONTS_HREF);
-
-// One pre-rendered fragment per distinct chrome combination, plus a route table.
-// Once chrome is conditional, a single header.html is insufficient: /store and a
-// brand page can resolve to different headers.
-const storefrontRoutes = [
-  { route: `/${PREFIX}`, pattern: `/${PREFIX}`, kind: 'plp', isDefault: true },
-  { route: `/${PREFIX}/*`, pattern: `/${PREFIX}/*`, kind: 'pdp', pdpType: 'listings' },
-  ...emitted.map((p) => ({ route: p.path, pattern: p.path, kind: 'page', group: p.group })),
-];
-const { combos, table } = chromeCombinations(storefrontRoutes, pages, assignments);
-
-const chromeManifest = {};
-for (const [key, resolved] of combos) {
-  const rendered = chromeFor(resolved);
-  if (key !== 'default') {
-    write(`partials/header--${key}.html`, rendered.header);
-    write(`partials/footer--${key}.html`, rendered.footer);
-  }
-  chromeManifest[key] = {
-    header: key === 'default' ? '/partials/header.html' : `/partials/header--${key}.html`,
-    footer: key === 'default' ? '/partials/footer.html' : `/partials/footer--${key}.html`,
-    styles: ['/partials/tokens.css', '/partials/reset.css', '/partials/blocks.css', '/partials/chrome.css'],
-    scripts: ['/partials/chrome.js', '/partials/widgets.js'],
-    templates: Object.fromEntries(SLOTS.map((s) => [s, resolved[s].templateId])),
-  };
-}
-
-write(
-  'partials/manifest.json',
-  JSON.stringify(
-    {
-      contractVersion: config.contractVersion,
-      rendererVersion: RENDERER_VERSION,
-      generatedAt: new Date().toISOString(),
-      channelToken: config.channelToken,
-      storefrontPrefix: PREFIX,
-      fontsHref: FONTS_HREF,
-      chrome: chromeManifest,
-      routes: table,
-    },
-    null,
-    2,
-  ) + '\n',
-);
 
 /* --------------------------------------------------------------------- blog */
 
@@ -355,30 +356,34 @@ if (existsSync(join(BLOG, 'posts'))) {
 
     // A post authored as blocks renders through the same path a page does; the
     // legacy `body` string stays supported so existing posts keep working.
-    const postBody = (post) =>
-      post.blocks
-        ? renderPage({ blocks: post.blocks }, renderCtx)
-        : `<div class="bz-container bz-prose">${post.body || ''}</div>`;
+    const postNodes = (post) =>
+      post.blocks || post.nodes
+        ? parseDocument(post).nodes
+        : [{ id: 'legacy-body', type: 'customHtml', props: { html: post.body || '' } }];
 
     for (const post of posts) {
+      // A post's title, date and cover come from the post record rather than from
+      // its nodes, so they are composed here and the node tree starts at the body.
+      const masthead = `<div class="bz-block"><div class="bz-container bz-prose">
+    <p class="bz-eyebrow">${new Date(post.date).toLocaleDateString('en-US', { dateStyle: 'long' })}</p>
+    <h1>${post.title}</h1>
+  </div>${
+    post.coverImage
+      ? `<div class="bz-container"><img src="${post.coverImage}" alt="" width="1200" height="630" loading="eager" /></div>`
+      : ''
+  }</div>`;
+      const rendered = renderWithTemplate({ kind: 'post', slug: post.slug }, postNodes(post));
       write(
         `${base.slice(1)}/${post.slug}/index.html`,
         renderShell({
           config,
           fontsHref: FONTS_HREF,
-          chrome: defaultChrome,
+          chrome: { header: rendered.header, footer: rendered.footer },
           storefrontPrefix: PREFIX,
           title: post.title,
           description: post.description || config.seo.defaultDescription,
           canonical: `${config.url}${base}/${post.slug}`,
-          bodyHtml: `<article class="bz-block">
-  <div class="bz-container bz-prose">
-    <p class="bz-eyebrow">${new Date(post.date).toLocaleDateString('en-US', { dateStyle: 'long' })}</p>
-    <h1>${post.title}</h1>
-  </div>
-  ${post.coverImage ? `<div class="bz-container"><img src="${post.coverImage}" alt="" width="1200" height="630" loading="eager" /></div>` : ''}
-  ${postBody(post)}
-</article>`,
+          bodyHtml: `<article>${masthead}${rendered.body}</article>`,
           pageCss: '',
           pageJs: null,
           ogImage: post.coverImage,
@@ -387,12 +392,13 @@ if (existsSync(join(BLOG, 'posts'))) {
       );
     }
 
+    const indexChrome = chromeFor({ kind: 'blog' });
     write(
       `${base.slice(1)}/index.html`,
       renderShell({
         config,
         fontsHref: FONTS_HREF,
-        chrome: defaultChrome,
+        chrome: indexChrome,
         storefrontPrefix: PREFIX,
         title: settings.title,
         description: settings.description || config.seo.defaultDescription,
@@ -417,6 +423,55 @@ ${posts
     );
   }
 }
+
+// One pre-rendered fragment per distinct template, plus a route table. Once a
+// template is conditional, a single header.html is insufficient: /store and a
+// page with its own template resolve to different chrome.
+const storefrontRoutes = [
+  { pattern: `/${PREFIX}`, target: { kind: 'inventory' } },
+  { pattern: `/${PREFIX}/*`, target: { kind: 'inventory' } },
+  ...emitted.map((p) => ({ pattern: p.path, target: { kind: 'page', slug: p.slug, group: p.group } })),
+  ...posts.map((post) => ({ pattern: `/blog/${post.slug}`, target: { kind: 'post', slug: post.slug } })),
+];
+
+const chromeManifest = {};
+const table = [];
+for (const route of storefrontRoutes) {
+  const chrome = chromeFor(route.target);
+  const key = chrome.id === defaultChrome.id ? 'default' : chrome.id;
+  if (!chromeManifest[key]) {
+    if (key !== 'default') {
+      write(`partials/header--${key}.html`, chrome.header);
+      write(`partials/footer--${key}.html`, chrome.footer);
+    }
+    chromeManifest[key] = {
+      header: key === 'default' ? '/partials/header.html' : `/partials/header--${key}.html`,
+      footer: key === 'default' ? '/partials/footer.html' : `/partials/footer--${key}.html`,
+      styles: ['/partials/tokens.css', '/partials/reset.css', '/partials/blocks.css', '/partials/chrome.css'],
+      scripts: ['/partials/chrome.js', '/partials/widgets.js'],
+      template: chrome.id,
+    };
+  }
+  table.push({ pattern: route.pattern, chrome: key });
+}
+
+write(
+  'partials/manifest.json',
+  JSON.stringify(
+    {
+      contractVersion: config.contractVersion,
+      rendererVersion: RENDERER_VERSION,
+      generatedAt: new Date().toISOString(),
+      channelToken: config.channelToken,
+      storefrontPrefix: PREFIX,
+      fontsHref: FONTS_HREF,
+      chrome: chromeManifest,
+      routes: table,
+    },
+    null,
+    2,
+  ) + '\n',
+);
 
 /* ------------------------------------------------------------------ sitemap */
 
@@ -464,6 +519,7 @@ for (const w of warnings) console.warn(`  warn: ${w}`);
 console.log(
   `Built ${emitted.length} page(s) (${indexable.length} indexable), ${Object.keys(forms).length} form(s), ` +
     `${registeredWidgets.length} custom widget(s), ` +
-    `${combos.size} chrome combination(s) + sitemap/robots/llms.txt -> dist/  ` +
+    `${templates.length} template(s), ${Object.keys(chromeManifest).length} chrome variant(s) ` +
+    `+ sitemap/robots/llms.txt -> dist/  ` +
     `[prefix: /${PREFIX}, renderer ${RENDERER_VERSION}]`,
 );

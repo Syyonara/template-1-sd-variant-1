@@ -16,19 +16,99 @@
   box-sizing: border-box;
 }
 
-/* Sections own generous vertical rhythm; content blocks sit closer together so a
-   heading followed by a paragraph does not read as two separate sections. */
-.bz-block { padding-block: var(--space-7); }
-.bz-block--heading, .bz-block--text, .bz-block--image, .bz-block--buttons,
-.bz-block--list, .bz-block--form, .bz-block--customHtml, .bz-block--widget,
-.bz-block--row { padding-block: var(--space-4); }
-.bz-block--spacer, .bz-block--divider { padding-block: 0; }
+.bz-container--wide { max-width: min(1600px, 96vw); }
 
-/* A block inside a column is already inside a container — it must not open a
-   second one, or the copy indents once per nesting level. */
-.bz-col .bz-container { max-width: none; padding-inline: 0; }
-.bz-col > .bz-block { padding-block: 0; }
-.bz-col > .bz-block + .bz-block { padding-block-start: var(--space-4); }
+/* --------------------------------------------------------- layout nodes ---
+   Section, row and column are the structure the editor manipulates directly.
+   Everything here is driven by custom properties the renderer sets per node, so
+   the same stylesheet serves every arrangement without a class per variant. */
+
+.bz-section {
+  padding-block: var(--bz-pad, var(--space-7));
+  position: relative;
+}
+.bz-section--bg-paper { background: var(--paper); }
+.bz-section--bg-card { background: var(--card); }
+.bz-section--bg-ink { background: var(--ink); color: #fff; }
+.bz-section--bg-accent { background: var(--accent); color: var(--ink-dark); }
+.bz-section--bg-ink :is(h1, h2, h3, h4, h5, h6) { color: #fff; }
+.bz-section--h-half { min-height: 50vh; display: flex; flex-direction: column; }
+.bz-section--h-full { min-height: 100vh; display: flex; flex-direction: column; }
+.bz-section--v-center { justify-content: center; }
+.bz-section--v-end { justify-content: flex-end; }
+.bz-section--h-half > *, .bz-section--h-full > * { width: 100%; }
+
+/* A twelve-column grid. `--bz-span` on each column is the only thing that
+   changes between a half/half and a two-thirds/third row, which is what lets a
+   column be resized by dragging without touching its markup. */
+.bz-row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--bz-gap, var(--space-6));
+  align-items: stretch;
+}
+.bz-row--v-start { align-items: start; }
+.bz-row--v-center { align-items: center; }
+.bz-row--v-end { align-items: end; }
+
+.bz-col {
+  grid-column: span var(--bz-span, 12) / span var(--bz-span, 12);
+  min-width: 0;
+  padding: var(--bz-col-pad, 0);
+  box-sizing: border-box;
+}
+.bz-col--v-start { align-self: start; }
+.bz-col--v-center { align-self: center; }
+.bz-col--v-end { align-self: end; }
+.bz-col--bg-paper { background: var(--paper); }
+.bz-col--bg-card { background: var(--card); }
+.bz-col--bg-ink { background: var(--ink); color: #fff; }
+.bz-col--bg-accent { background: var(--accent); color: var(--ink-dark); }
+
+/* Columns stack rather than shrink. Which width they stack at is a per-row
+   choice, because a two-column hero and a four-column feature grid do not want
+   the same answer. */
+@media (max-width: 767px) {
+  .bz-row--stack-tablet > .bz-col,
+  .bz-row--stack-mobile > .bz-col { grid-column: 1 / -1; }
+  .bz-row--stack-tablet.bz-row--rev,
+  .bz-row--stack-mobile.bz-row--rev { display: flex; flex-direction: column-reverse; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bz-row--stack-tablet > .bz-col { grid-column: 1 / -1; }
+  .bz-row--stack-tablet.bz-row--rev { display: flex; flex-direction: column-reverse; }
+}
+
+/* The content area. Only ever visible in the editor — the published page has the
+   page's own nodes here instead. */
+.bz-contentarea {
+  min-height: 160px;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-card);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.bz-contentarea__label {
+  font: 700 var(--text-small) / 1 var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+}
+
+/* Widgets sit closer together than sections do; a heading followed by a
+   paragraph should not read as two separate bands. */
+.bz-block { padding-block: var(--space-4); }
+.bz-block--spacer, .bz-block--divider { padding-block: 0; }
+.bz-block + .bz-block { padding-block-start: 0; }
+
+/* A widget inside a section or a column is already inside a container — it must
+   not open a second one, or the copy indents once per nesting level. */
+.bz-col .bz-container,
+.bz-section .bz-container { max-width: none; padding-inline: 0; }
+.bz-section > .bz-container { max-width: var(--container); padding-inline: var(--space-4); }
+.bz-section > .bz-container.bz-container--wide { max-width: min(1600px, 96vw); }
+
 .bz-block--hero, .bz-block--statBand, .bz-block--serviceGrid, .bz-block--footer {
   padding-block: var(--space-8);
   background: var(--ink);
@@ -46,13 +126,9 @@
 }
 .bz-hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
 
-.bz-row { display: grid; gap: var(--space-6); }
-.bz-row--mid { align-items: center; }
 .bz-grid { display: grid; gap: var(--space-5); }
 
 @media (min-width: 768px) {
-  .bz-row--2 { grid-template-columns: 1fr 1fr; }
-  .bz-row--3 { grid-template-columns: repeat(3, 1fr); }
   .bz-grid--2 { grid-template-columns: repeat(2, 1fr); }
   .bz-grid--3 { grid-template-columns: repeat(3, 1fr); }
   .bz-grid--4 { grid-template-columns: repeat(2, 1fr); }

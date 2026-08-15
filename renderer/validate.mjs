@@ -1,13 +1,19 @@
-// Validation of page JSON against the block schemas.
+// Validation of a document tree against the node schemas.
 //
 // Deliberately not a general JSON Schema engine: it understands exactly the
-// keywords the block schemas use, which keeps the renderer dependency-free and
-// keeps the failure messages specific enough to hand back to a model for a retry.
-// If a schema starts using a keyword this does not implement, `unsupported` is
+// keywords the schemas use, which keeps the renderer dependency-free and keeps
+// the failure messages specific enough to hand back to a model for a retry. If a
+// schema starts using a keyword this does not implement, `unsupported` is
 // reported rather than silently passing.
+//
+// Two things are checked that a schema cannot express, and they are the ones
+// that matter for a builder: every node's id is unique, and every parent/child
+// pair is one `accepts` allows. The second is the same predicate GrapesJS builds
+// its drop rules from, so a tree the editor let you build always validates.
 
-import { getBlock, contentBlockTypes, sectionBlockTypes } from './blocks.mjs';
-import { parsePage } from './page.mjs';
+import { getBlock } from './blocks.mjs';
+import { accepts, getLayout, isLayout, parseDocument } from './nodes.mjs';
+import { allWidgetIds } from './blocks.mjs';
 
 const KNOWN_KEYWORDS = new Set([
   'type',
@@ -21,7 +27,6 @@ const KNOWN_KEYWORDS = new Set([
   'maximum',
   'minItems',
   'maxItems',
-  '$ref',
 ]);
 
 function typeOf(value) {
@@ -35,7 +40,6 @@ function typeOf(value) {
 function typeMatches(expected, value) {
   const actual = typeOf(value);
   if (expected === 'number') return actual === 'number' || actual === 'integer';
-  if (expected === 'object') return actual === 'object';
   return actual === expected;
 }
 
@@ -46,16 +50,6 @@ function check(schema, value, path, errors) {
     if (!KNOWN_KEYWORDS.has(key)) {
       errors.push({ path, message: `schema uses unsupported keyword "${key}"`, unsupported: true });
     }
-  }
-
-  // `$ref` is only ever the content-block reference used by `row.columns`.
-  if (schema.$ref) {
-    if (schema.$ref !== '#/definitions/contentBlock') {
-      errors.push({ path, message: `unsupported $ref ${schema.$ref}` , unsupported: true });
-      return;
-    }
-    checkBlock(value, path, errors, 1);
-    return;
   }
 
   if (value === undefined || value === null) return;
@@ -97,8 +91,8 @@ function check(schema, value, path, errors) {
     for (const [key, propValue] of Object.entries(value)) {
       const propSchema = schema.properties[key];
       if (!propSchema) {
-        // Unknown props are dropped rather than rejected: a newer editor writing a
-        // prop this renderer version does not know must not fail the dealer's build.
+        // Unknown props are dropped rather than rejected: a newer editor writing
+        // a prop this renderer version does not know must not fail the build.
         errors.push({ path: `${path}.${key}`, message: 'unknown property (will be ignored)', warning: true });
         continue;
       }
@@ -107,73 +101,120 @@ function check(schema, value, path, errors) {
   }
 }
 
-function checkBlock(block, path, errors, depth) {
-  if (!block || typeof block !== 'object' || Array.isArray(block)) {
-    errors.push({ path, message: 'block must be an object' });
-    return;
-  }
-  if (!block.id || typeof block.id !== 'string') {
-    errors.push({ path: `${path}.id`, message: 'every block needs a short stable string id' });
-  }
-  const def = getBlock(block.type);
-  if (!def) {
-    errors.push({
-      path: `${path}.type`,
-      message: `unknown block type "${block.type}". Sections: ${sectionBlockTypes().join(
-        ', ',
-      )}. Content: ${contentBlockTypes().join(', ')}.`,
-    });
-    return;
-  }
-  if (depth > 0 && def.category === 'section') {
-    errors.push({
-      path: `${path}.type`,
-      message: `"${block.type}" is a section block and must be top-level, never inside a column`,
-    });
-  }
-  check(def.schema, block.props || {}, `${path}.props`, errors);
+/** The definition for any node type, layout or widget. */
+export function getDefinition(type) {
+  return getLayout(type) || getBlock(type);
 }
 
-/** Validate one block. Returns `{ valid, errors, warnings }`. */
-export function validateBlock(block, depth = 0) {
+function checkNode(node, parentType, path, errors, seen) {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) {
+    errors.push({ path, message: 'must be a node object' });
+    return;
+  }
+  if (!node.id || typeof node.id !== 'string') {
+    errors.push({ path: `${path}.id`, message: 'every node needs a short stable string id' });
+  } else if (seen.has(node.id)) {
+    errors.push({ path: `${path}.id`, message: `duplicate node id "${node.id}"` });
+  } else {
+    seen.add(node.id);
+  }
+
+  const definition = getDefinition(node.type);
+  if (!definition) {
+    errors.push({
+      path: `${path}.type`,
+      message:
+        `unknown type "${node.type}". Layout: section, row, column, contentArea. ` +
+        `Widgets: ${allWidgetIds().join(', ')}.`,
+    });
+    return;
+  }
+
+  if (!accepts(parentType, node.type)) {
+    errors.push({
+      path: `${path}.type`,
+      message: `a ${node.type} cannot go inside ${parentType ? `a ${parentType}` : 'the page'}`,
+    });
+  }
+
+  check(definition.schema, node.props || {}, `${path}.props`, errors);
+
+  const children = Array.isArray(node.children) ? node.children : [];
+  if (children.length && !isLayout(node.type)) {
+    errors.push({
+      path: `${path}.children`,
+      message: `"${node.type}" is a widget and cannot hold children — put it in a column instead`,
+    });
+    return;
+  }
+  children.forEach((child, i) => checkNode(child, node.type, `${path}.children[${i}]`, errors, seen));
+}
+
+/** Validate one node and everything under it. */
+export function validateNode(node, parentType = null) {
   const all = [];
-  checkBlock(block, 'block', all, depth);
+  checkNode(node, parentType, 'node', all, new Set());
   return split(all);
 }
 
-/** Validate a whole page's block list, including duplicate ids. */
-export function validatePage(pageJson) {
-  const page = parsePage(pageJson);
+/** Validate a whole document. */
+export function validateDocument(raw) {
+  const document = parseDocument(raw);
   const all = [];
   const seen = new Set();
-
-  const walk = (blocks, path, depth) => {
-    blocks.forEach((block, i) => {
-      const at = `${path}[${i}]`;
-      checkBlock(block, at, all, depth);
-      if (block && block.id) {
-        if (seen.has(block.id)) {
-          all.push({ path: `${at}.id`, message: `duplicate block id "${block.id}"` });
-        }
-        seen.add(block.id);
-      }
-      const cols = block && block.props && block.props.columns;
-      if (Array.isArray(cols)) {
-        cols.forEach((col, c) => walk(Array.isArray(col) ? col : [], `${at}.columns[${c}]`, depth + 1));
-      }
-    });
-  };
-  walk(page.blocks, 'blocks', 0);
+  document.nodes.forEach((node, i) => checkNode(node, null, `nodes[${i}]`, all, seen));
   return split(all);
+}
+
+/**
+ * Validate a template: a document, plus the one rule that makes it a template.
+ *
+ * A template with no content area has nowhere to put a page, and one with two
+ * has no answer to which. Both are refused at save time rather than at render
+ * time, because at render time the only recourse is a warning on a live site.
+ */
+export function validateTemplate(raw) {
+  const base = validateDocument(raw);
+  const document = parseDocument(raw);
+
+  let count = 0;
+  const step = list => {
+    for (const node of list || []) {
+      if (!node || typeof node !== 'object') continue;
+      if (node.type === 'contentArea') count++;
+      if (Array.isArray(node.children)) step(node.children);
+    }
+  };
+  step(document.nodes);
+
+  const errors = [...base.errors];
+  if (count === 0) {
+    errors.push({
+      path: 'nodes',
+      message: 'a template needs a content area — that is where page content goes',
+    });
+  } else if (count > 1) {
+    errors.push({
+      path: 'nodes',
+      message: `a template can only have one content area; this one has ${count}`,
+    });
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings: base.warnings,
+    message: errors.map(e => `${e.path}: ${e.message}`).join('; '),
+  };
 }
 
 function split(all) {
-  const warnings = all.filter((e) => e.warning);
-  const errors = all.filter((e) => !e.warning);
+  const warnings = all.filter(e => e.warning);
+  const errors = all.filter(e => !e.warning);
   return {
     valid: errors.length === 0,
     errors,
     warnings,
-    message: errors.map((e) => `${e.path}: ${e.message}`).join('; '),
+    message: errors.map(e => `${e.path}: ${e.message}`).join('; '),
   };
 }

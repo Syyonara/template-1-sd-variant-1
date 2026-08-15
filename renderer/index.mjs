@@ -1,18 +1,55 @@
 // @buzznerd/site-renderer — the single source of truth for turning a dealer's
 // site data into HTML.
 //
-// Two consumers must produce identical output from it: `scripts/build.mjs` at
-// build time on Vercel, and the dealer dashboard's editor canvas. A third, the
-// Vendure plugin, imports only the schemas, to validate what the AI returns
-// before it is ever committed.
+// Three consumers must agree exactly, and they can only agree because they share
+// this module rather than each having a view of the same idea:
+//
+//   scripts/build.mjs      renders the published site on Vercel
+//   the dealer dashboard   renders the editor canvas, and drives GrapesJS from
+//                          the same node definitions the build uses
+//   the Vendure plugin     imports the schemas, to validate what the AI returns
+//                          before any of it is committed
+//
+// The vocabulary is one tree: section, row, column, contentArea, and widgets as
+// leaves. GrapesJS registers one component type per layout node, the AI contract
+// is generated from the same table, and `renderDocument` is what turns it into
+// HTML. There is no translation layer between the three.
 //
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
-export const RENDERER_VERSION = '3.1.0';
+export const RENDERER_VERSION = '4.0.0';
 
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export { compileTokens, compileTokenScope, fontsHref, withDefaults, DEFAULT_TOKENS, TOKEN_GROUPS } from './tokens.mjs';
+
+/* ------------------------------------------------------------- the document */
+
+export {
+  DOCUMENT_VERSION,
+  LAYOUT_TYPES,
+  CONTAINER_TYPES,
+  GRID_COLUMNS,
+  LAYOUT_REGISTRY,
+  ROW_PRESETS,
+  accepts,
+  ensureIds,
+  getLayout,
+  isContainer,
+  isLayout,
+  layoutCatalogue,
+  locateNode,
+  makeRow,
+  makeSection,
+  nextNodeId,
+  nodeIds,
+  parseDocument,
+  renderDocument,
+  walkNodes,
+} from './nodes.mjs';
+
+/* ----------------------------------------------------------------- widgets */
+
 export {
   blockRegistry,
   blockCatalogue,
@@ -22,14 +59,12 @@ export {
   clearCustomWidgets,
   customWidgets,
   customWidgetCss,
-  contentBlockTypes,
-  sectionBlockTypes,
   defaultPropsFor,
-  CONTENT_BLOCK_TYPES,
-  SECTION_BLOCK_TYPES,
-  LAYOUT_BLOCK_TYPES,
-  CHROME_BLOCK_TYPES,
+  allWidgetIds,
+  widgetIds,
+  WIDGET_GROUPS,
 } from './blocks.mjs';
+
 export {
   parseWidgetDefinition,
   compileWidget,
@@ -40,16 +75,37 @@ export {
   scopeCss,
   stripUnsafeHtml,
   stripUnsafeCss,
-  countSlots,
+  declaresSlots,
   isAutoTagged,
   emptyDefinition,
   PROP_TYPES,
 } from './custom-widgets.mjs';
-export { renderPage, parsePage, walkBlocks, blockIds } from './page.mjs';
+
 export { renderForm, operatorsForFieldType, FIELD_TYPES } from './forms.mjs';
 export { renderWidget, staticWidgetIds, BEHAVIOUR_ONLY } from './widgets.mjs';
-export { renderMenu, injectMenus, parseMenus, listMenus, locationsForMenu, MENU_LOCATIONS, MENU_ITEM_TYPES } from './menus.mjs';
+
+/* -------------------------------------------------------- menus + templates */
+
+export { renderMenu, injectMenus, parseMenus, listMenus, emptyMenu, MENU_ITEM_TYPES, MAX_MENU_DEPTH } from './menus.mjs';
+
+export {
+  TEMPLATE_VERSION,
+  CONDITION_TYPES,
+  composeDocument,
+  conditionMatches,
+  describeCondition,
+  findContentArea,
+  hasContentArea,
+  parseTemplate,
+  parseTemplates,
+  resolveTemplate,
+  splitAtContentArea,
+  starterTemplate,
+  templatePath,
+} from './templates.mjs';
+
+/* ----------------------------------------------------- shell, checks, edits */
+
 export { renderShell, businessJsonLd, analyticsTag } from './shell.mjs';
-export { resolveTemplates, chromeCombinations, templatePath, SLOTS } from './templates.mjs';
-export { validatePage, validateBlock } from './validate.mjs';
+export { validateDocument, validateNode, validateTemplate, getDefinition } from './validate.mjs';
 export { applyOps } from './ops.mjs';
