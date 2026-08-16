@@ -16,6 +16,9 @@ import {
   customWidgets,
   ensureIds,
   findContentArea,
+  fontFaceCss,
+  fontPreloads,
+  fontsHref,
   makeRow,
   makeSection,
   parseDocument,
@@ -349,8 +352,11 @@ test('node styles compile to id-keyed rules with desktop-first media buckets', (
       ],
     },
   ]);
-  assert.match(css, /\[data-bz-node="s1"\]\[data-bz-node\]\{background:#102030;padding-top:64px\}/);
-  assert.match(css, /@media \(max-width: 767px\)\{\[data-bz-node="s1"\]\[data-bz-node\]\{padding-top:24px;text-align:center\}\}/);
+  // Declaration order follows the field table, not whatever order the editor
+  // happened to write the keys in, so a shorthand can never land after the
+  // longhand it would reset.
+  assert.match(css, /\[data-bz-node="s1"\]\[data-bz-node\]\{padding-top:64px;background:#102030\}/);
+  assert.match(css, /@media \(max-width: 640px\)\{\[data-bz-node="s1"\]\[data-bz-node\]\{padding-top:24px;text-align:center\}\}/);
   assert.match(css, /\[data-bz-node="h1"\]\[data-bz-node\]\{color:var\(--accent\)\}/);
 });
 
@@ -362,16 +368,141 @@ test('style values outside the whitelist are dropped, never emitted', () => {
       props: {},
       styles: {
         base: {
-          background: 'url(javascript:alert(1))',
+          background: 'rgb(1 2 3)',
           textAlign: 'justify',
           paddingTop: 99999,
+          // Layering is allowed, but not viewport-anchored layering: a fixed
+          // node cannot be scrolled away from and covers the editor tooling.
           position: 'fixed',
+          zIndex: 9999,
+          aspectRatio: '16/0',
+          gridColumns: 'repeat(3, 1fr) 40vh',
+          backgroundImage: 'javascript:alert(1)',
+          marginLeft: -80,
         },
       },
     },
   ]);
   assert.equal(css, '');
-  assert.deepEqual(unknownStyleKeys({ base: { position: 'fixed' }, desktop: {} }), ['base.position', 'desktop']);
+  assert.deepEqual(unknownStyleKeys({ base: { nonsense: 1 }, desktop: {} }), ['base.nonsense', 'desktop']);
+});
+
+test('the widened contract expresses the patterns real handoffs are built from', () => {
+  const css = compileNodeStyles([
+    {
+      id: 'scrim',
+      type: 'text',
+      props: {},
+      styles: {
+        base: {
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          // Opacity would fade the copy with the scrim; an alpha background does not.
+          background: '#1a1714@68%',
+          backgroundImage: 'https://cdn.example.com/hero.jpg',
+          backgroundSize: 'cover',
+        },
+      },
+    },
+    { id: 'card', type: 'text', props: {}, styles: { base: { aspectRatio: '4/3', radius: 999 } } },
+    { id: 'panel', type: 'text', props: {}, styles: { base: { gridColumns: '240px 200px 1fr' } } },
+    { id: 'footer', type: 'text', props: {}, styles: { base: { gridColumns: '1.4fr 1fr 1fr 1fr' } } },
+    { id: 'rail', type: 'text', props: {}, styles: { base: { overflowX: 'auto', top: '100%' } } },
+    { id: 'overlap', type: 'text', props: {}, styles: { base: { marginTop: -56 } } },
+    { id: 'mirror', type: 'text', props: {}, styles: { tablet: { order: 2 } } },
+    { id: 'moved', type: 'text', props: {}, styles: { base: { translateY: -8, scale: 1.02, rotate: 3 } } },
+  ]);
+
+  assert.match(css, /\[data-bz-node="scrim"\]\[data-bz-node\]\{[^}]*position:absolute/);
+  assert.match(css, /inset:0px/);
+  assert.match(css, /background:rgb\(26 23 20 \/ 68%\)/);
+  // The shorthand precedes the image, so the image survives both being set.
+  assert.match(css, /background:rgb\(26 23 20 \/ 68%\);background-image:url\("https:\/\/cdn\.example\.com\/hero\.jpg"\)/);
+  assert.match(css, /\[data-bz-node="card"\]\[data-bz-node\]\{aspect-ratio:4 \/ 3;border-radius:999px\}/);
+  assert.match(css, /\[data-bz-node="panel"\]\[data-bz-node\]\{grid-template-columns:240px 200px 1fr\}/);
+  assert.match(css, /\[data-bz-node="footer"\]\[data-bz-node\]\{grid-template-columns:1.4fr 1fr 1fr 1fr\}/);
+  assert.match(css, /\[data-bz-node="rail"\]\[data-bz-node\]\{top:100%;overflow-x:auto\}/);
+  assert.match(css, /\[data-bz-node="overlap"\]\[data-bz-node\]\{margin-top:-56px\}/);
+  assert.match(css, /@media \(max-width: 1100px\)\{\[data-bz-node="mirror"\]\[data-bz-node\]\{order:2\}\}/);
+  // The four transform axes are separate bounded fields, composed on the way out.
+  assert.match(css, /\[data-bz-node="moved"\]\[data-bz-node\]\{transform:translateY\(-8px\) rotate\(3deg\) scale\(1.02\)\}/);
+});
+
+/* ------------------------------------------------------------------ fonts */
+
+test('self-hosted fonts compile to @font-face and suppress the Google request', () => {
+  const brand = {
+    fonts: {
+      heading: 'INTL Headline',
+      body: 'INTL Text',
+      files: [
+        { family: 'INTL Headline', url: 'https://cdn.example.com/f/INTLHeadline-Regular.woff2', weight: 400 },
+        { family: 'INTL Headline', url: 'https://cdn.example.com/f/INTLHeadline-Bold.woff2', weight: '600 900' },
+        { family: 'INTL Text', url: 'https://cdn.example.com/f/INTLText-Regular.woff2', weight: 400 },
+        { family: 'INTL Text', url: 'https://cdn.example.com/f/INTLText-Italic.woff2', weight: 400, style: 'italic' },
+      ],
+    },
+  };
+
+  const css = fontFaceCss(brand);
+  assert.match(css, /@font-face\{font-family:"INTL Headline";src:url\("https:\/\/cdn\.example\.com\/f\/INTLHeadline-Regular\.woff2"\) format\("woff2"\);font-weight:400;font-style:normal;font-display:swap;\}/);
+  assert.match(css, /font-weight:600 900/);
+  assert.match(css, /font-style:italic/);
+
+  // Both families are self-hosted, so there is nothing left to ask Google for.
+  assert.equal(fontsHref(brand), '');
+
+  // Upright text weights of the two active families only — a bold heading face
+  // does render above the fold, an italic almost never does — and capped so
+  // preloading cannot compete with the hero image for bandwidth.
+  const preloads = fontPreloads(brand);
+  assert.deepEqual(preloads, [
+    'https://cdn.example.com/f/INTLHeadline-Regular.woff2',
+    'https://cdn.example.com/f/INTLHeadline-Bold.woff2',
+    'https://cdn.example.com/f/INTLText-Regular.woff2',
+  ]);
+  assert.ok(!preloads.some((url) => url.includes('Italic')));
+});
+
+test('a font family that is not self-hosted still falls back to Google', () => {
+  const mixed = {
+    fonts: {
+      heading: 'INTL Headline',
+      body: 'Inter',
+      files: [{ family: 'INTL Headline', url: '/fonts/INTLHeadline-Regular.woff2', weight: 400 }],
+    },
+  };
+  const href = fontsHref(mixed);
+  assert.match(href, /family=Inter/);
+  assert.ok(!href.includes('INTL'));
+});
+
+test('unsafe or unusable font entries are dropped rather than repaired', () => {
+  const css = fontFaceCss({
+    fonts: {
+      heading: 'X',
+      body: 'X',
+      files: [
+        { family: 'X', url: 'http://insecure.example.com/a.woff2', weight: 400 },
+        { family: 'X', url: 'javascript:alert(1)', weight: 400 },
+        { family: 'X"} body{display:none', url: 'https://cdn.example.com/b.woff2', weight: 400 },
+        { family: 'X', url: 'https://cdn.example.com/c.svg', weight: 400 },
+        { family: 'X', url: 'https://cdn.example.com/d.woff2', weight: 5000 },
+        { family: 'X', url: 'https://cdn.example.com/ok.woff2', weight: 400 },
+      ],
+    },
+  });
+  assert.equal((css.match(/@font-face/g) || []).length, 1);
+  assert.match(css, /ok\.woff2/);
+});
+
+test('a border width still implies a visible border, per side', () => {
+  const css = compileNodeStyles([
+    { id: 'row', type: 'text', props: {}, styles: { base: { borderTopWidth: 1, borderColor: 'line' } } },
+  ]);
+  assert.match(css, /border-top-width:1px/);
+  assert.match(css, /border-style:solid/);
 });
 
 test('styles survive parseDocument, and update ops patch them per bucket', () => {

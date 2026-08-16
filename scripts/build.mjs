@@ -25,6 +25,8 @@ import {
   compileTokenScope,
   composeDocument,
   customWidgetCss,
+  fontFaceCss,
+  fontPreloads,
   fontsHref,
   parseDocument,
   parseTemplates,
@@ -112,7 +114,11 @@ const customCss = customWidgetCss();
 
 /* ------------------------------------------------------------------- tokens */
 
-const tokensCss = compileTokens(tokens);
+// Self-hosted @font-face rules lead the design system stylesheet, so a family is
+// declared before any rule uses it — and so the storefront, which already loads
+// /partials/tokens.css for the dealer's chrome, inherits the brand font with no
+// second mechanism.
+const tokensCss = fontFaceCss(tokens) + compileTokens(tokens);
 
 // Scoped overrides: a brand page restyles within the same cascade rather than
 // loading a second stylesheet, so unmentioned tokens keep their base values.
@@ -134,6 +140,7 @@ if (existsSync(scopeDir)) {
 }
 
 const FONTS_HREF = fontsHref(tokens);
+const FONT_PRELOAD = fontPreloads(tokens);
 
 /* ------------------------------------------------------------------- chrome */
 
@@ -325,6 +332,7 @@ for (const p of pages) {
       custom: CUSTOM,
       config,
       fontsHref: FONTS_HREF,
+      fontPreload: FONT_PRELOAD,
       chrome: { header: rendered.header, footer: rendered.footer },
       storefrontPrefix: PREFIX,
       title: p.title,
@@ -412,6 +420,7 @@ if (existsSync(join(BLOG, 'posts'))) {
           custom: CUSTOM,
           config,
           fontsHref: FONTS_HREF,
+          fontPreload: FONT_PRELOAD,
           chrome: { header: rendered.header, footer: rendered.footer },
           storefrontPrefix: PREFIX,
           title: post.title,
@@ -433,6 +442,7 @@ if (existsSync(join(BLOG, 'posts'))) {
         custom: CUSTOM,
         config,
         fontsHref: FONTS_HREF,
+        fontPreload: FONT_PRELOAD,
         chrome: indexChrome,
         storefrontPrefix: PREFIX,
         title: settings.title,

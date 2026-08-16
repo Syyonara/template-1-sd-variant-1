@@ -18,17 +18,47 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
-export const RENDERER_VERSION = '4.3.0';
+export const RENDERER_VERSION = '4.4.0';
+
+/**
+ * Client behaviours a node may opt into with `data-bz-behavior`.
+ *
+ * Declared here rather than only in the browser script because three consumers
+ * need the list: the AI contract states what markup may ask for, the validator
+ * rejects a name nothing implements, and the style panel offers them. The
+ * implementations live in `renderer/client/widgets.js`.
+ */
+export const BEHAVIOURS = [
+  'carousel',
+  'filter',
+  'dropdown',
+  'drawer',
+  'rotator',
+  'scrollstate',
+  'dependentselect',
+  'mapsync',
+];
 
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export {
   STYLE_FIELDS,
   STYLE_BUCKETS,
+  STYLE_GROUPS,
   sanitizeStyles,
   unknownStyleKeys,
   compileNodeStyles,
 } from './styles.mjs';
-export { compileTokens, compileTokenScope, fontsHref, withDefaults, DEFAULT_TOKENS, TOKEN_GROUPS } from './tokens.mjs';
+export {
+  compileTokens,
+  compileTokenScope,
+  fontFaceCss,
+  fontFiles,
+  fontPreloads,
+  fontsHref,
+  withDefaults,
+  DEFAULT_TOKENS,
+  TOKEN_GROUPS,
+} from './tokens.mjs';
 
 /* ------------------------------------------------------------- the document */
 

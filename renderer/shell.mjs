@@ -56,6 +56,13 @@ export function analyticsTag(config) {
 export function renderShell({
   config,
   fontsHref,
+  /**
+   * Self-hosted woff2 URLs worth preloading, from `fontPreloads(tokens)`.
+   * `crossorigin` is not optional even for a same-origin file: font fetches are
+   * CORS-mode, and a preload whose mode differs from the real request is simply
+   * downloaded twice.
+   */
+  fontPreload = [],
   chrome = {},
   title,
   description,
@@ -91,25 +98,45 @@ export function renderShell({
   const scopes = tokenScopes.length
     ? tokenScopes.map((s) => `\n<link rel="stylesheet" href="/styles/tokens.${s}.css" />`).join('')
     : '';
+
+  // Google Fonts is only contacted when a family is not self-hosted. Emitting
+  // the tag unconditionally would mean an empty href, which resolves to this
+  // page and fetches the whole document again as a stylesheet.
+  const fontTags = [
+    ...fontPreload.map(
+      (url) => `<link rel="preload" href="${esc(url)}" as="font" type="font/woff2" crossorigin />`,
+    ),
+    ...(fontsHref
+      ? [
+          '<link rel="preconnect" href="https://fonts.googleapis.com" />',
+          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
+          `<link rel="stylesheet" href="${esc(fontsHref)}" />`,
+        ]
+      : []),
+  ].join('\n');
+
   return `<!doctype html>
-<html lang="${lang}">
+<html lang="${esc(lang)}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />${custom.headStart ? `\n${custom.headStart}` : ''}
-<title>${fullTitle}</title>
-<meta name="description" content="${description}" />
-<link rel="canonical" href="${canonical}" />${noindex ? '\n<meta name="robots" content="noindex,nofollow" />' : ''}
-<meta name="theme-color" content="${config.seo.themeColor}" />
-<meta property="og:title" content="${fullTitle}" />
-<meta property="og:description" content="${description}" />
-<meta property="og:image" content="${og}" />
-<meta property="og:url" content="${canonical}" />
+<title>${esc(fullTitle)}</title>
+<meta name="description" content="${esc(description)}" />
+<link rel="canonical" href="${esc(canonical)}" />${noindex ? '\n<meta name="robots" content="noindex,nofollow" />' : ''}
+<meta name="theme-color" content="${esc(config.seo.themeColor)}" />
+<meta property="og:site_name" content="${esc(config.name)}" />
+<meta property="og:locale" content="${esc(config.seo.locale || 'en_US')}" />
+<meta property="og:title" content="${esc(fullTitle)}" />
+<meta property="og:description" content="${esc(description)}" />
+<meta property="og:image" content="${esc(og)}" />
+<meta property="og:url" content="${esc(canonical)}" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="icon" href="${config.favicon}" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="${fontsHref}" />
+<meta name="twitter:title" content="${esc(fullTitle)}" />
+<meta name="twitter:description" content="${esc(description)}" />
+<meta name="twitter:image" content="${esc(og)}" />
+<link rel="icon" href="${esc(config.favicon)}" />
+${fontTags}
 <link rel="stylesheet" href="/styles/tokens.css" />${scopes}
 <link rel="stylesheet" href="/styles/reset.css" />
 <link rel="stylesheet" href="/styles/blocks.css" />

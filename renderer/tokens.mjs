@@ -238,10 +238,133 @@ export function compileTokenScope(scope, override, base) {
   return { css, unknown };
 }
 
-/** Google Fonts href for the token set's heading + body families. */
+/* ------------------------------------------------------------------- fonts */
+
+/* Dealers own licensed brand fonts, and a brand font is the most conspicuous
+ * thing about a site — get it wrong and the design is visibly not the design,
+ * whatever else is right. So `tokens.fonts.files` describes self-hosted faces
+ * and this section compiles them; Google Fonts stays as the fallback for a
+ * dealer who has not uploaded anything.
+ *
+ * Files are uploaded through the media service to R2 and referenced by URL, so
+ * nothing binary lands in the git repo. */
+
+const FONT_FORMATS = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' };
+
+/** CSS strings are being built by hand, so anything that could close one is out. */
+const cssSafe = (value) => typeof value === 'string' && !/["'()\\;{}]|[\u0000-\u001f]/.test(value);
+
+/** Same-origin paths and https only — a font is a request the page has to trust. */
+function safeFontUrl(url) {
+  if (!cssSafe(url)) return null;
+  const raw = url.trim();
+  if (!raw) return null;
+  return /^(?:https:\/\/[\w.-]+\/|\/(?!\/))/.test(raw) ? raw : null;
+}
+
+/** `400`, or a variable-font range like `600 900`. */
+function fontWeight(value) {
+  if (value === undefined || value === null || value === '') return '400';
+  const parts = String(value).trim().split(/\s+/).map(Number);
+  if (parts.length > 2 || parts.some((n) => !Number.isFinite(n) || n < 1 || n > 1000)) return null;
+  return parts.join(' ');
+}
+
+/**
+ * Normalise `tokens.fonts.files` into faces this module is willing to emit.
+ *
+ * An entry the validators reject is dropped rather than repaired: a broken
+ * `@font-face` fails silently at render time, which is far harder to diagnose
+ * than a face that never appeared.
+ */
+export function fontFiles(input) {
+  const tokens = withDefaults(input);
+  const files = Array.isArray(tokens.fonts.files) ? tokens.fonts.files : [];
+  const out = [];
+  for (const entry of files) {
+    if (!entry || typeof entry !== 'object') continue;
+    const url = safeFontUrl(entry.url);
+    const family = typeof entry.family === 'string' ? entry.family.trim() : '';
+    if (!url || !family || !cssSafe(family)) continue;
+    const weight = fontWeight(entry.weight);
+    if (weight === null) continue;
+    const extension = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+    const format = FONT_FORMATS[extension];
+    if (!format) continue;
+    out.push({
+      family,
+      url,
+      format,
+      weight,
+      style: entry.style === 'italic' ? 'italic' : 'normal',
+      display: entry.display === 'block' || entry.display === 'optional' ? entry.display : 'swap',
+    });
+  }
+  return out;
+}
+
+/**
+ * `@font-face` rules for every self-hosted file.
+ *
+ * Emitted into `styles/tokens.css` rather than the document head, which means
+ * the storefront picks them up automatically: it already loads
+ * `/partials/tokens.css` for the dealer's chrome, so inventory pages get the
+ * dealer's brand font without a second mechanism.
+ */
+export function fontFaceCss(input) {
+  const faces = fontFiles(input);
+  if (!faces.length) return '';
+  return (
+    faces
+      .map(
+        (f) =>
+          `@font-face{font-family:"${f.family}";src:url("${f.url}") format("${f.format}");` +
+          `font-weight:${f.weight};font-style:${f.style};font-display:${f.display};}`,
+      )
+      .join('\n') + '\n'
+  );
+}
+
+/** Which families the self-hosted files actually provide. */
+function localFamilies(input) {
+  return new Set(fontFiles(input).map((f) => f.family.toLowerCase()));
+}
+
+/**
+ * The faces worth preloading — the ones that render the first screen.
+ *
+ * Preloading everything is worse than preloading nothing: it competes with the
+ * LCP image for bandwidth. Upright text weights of the heading and body
+ * families only, capped at four.
+ */
+export function fontPreloads(input) {
+  const tokens = withDefaults(input);
+  const wanted = [tokens.fonts.heading, tokens.fonts.body].filter(Boolean).map((f) => f.toLowerCase());
+  return fontFiles(input)
+    .filter((f) => f.format === 'woff2' && f.style === 'normal' && wanted.includes(f.family.toLowerCase()))
+    .filter((f) => {
+      const weight = Number(String(f.weight).split(' ')[0]);
+      return weight <= 700;
+    })
+    .slice(0, 4)
+    .map((f) => f.url);
+}
+
+/**
+ * Google Fonts href for any family the self-hosted files do not cover.
+ *
+ * Returns an empty string when nothing is needed, and the shell omits the tag
+ * entirely in that case — an empty `href` would resolve to the page itself and
+ * fetch the whole document a second time as a stylesheet.
+ */
 export function fontsHref(input) {
   const tokens = withDefaults(input);
-  const fams = [...new Set([tokens.fonts.heading, tokens.fonts.body])]
+  const local = localFamilies(input);
+  const remote = [...new Set([tokens.fonts.heading, tokens.fonts.body])]
+    .filter(Boolean)
+    .filter((family) => !local.has(String(family).toLowerCase()));
+  if (!remote.length) return '';
+  const fams = remote
     .map((f) => encodeURIComponent(f).replace(/%20/g, '+') + ':wght@400;600;700;800')
     .join('&family=');
   return `https://fonts.googleapis.com/css2?family=${fams}&display=swap`;

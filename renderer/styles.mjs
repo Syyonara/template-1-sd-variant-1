@@ -17,6 +17,13 @@
 // every consumer — the style panel, the validator, the AI contract — agreeing
 // on what an override can say, exactly the way the block catalogue already
 // works for props.
+//
+// The whitelist is wide enough to express the layered, layout-driven sections
+// real design handoffs are built from: a photo behind a scrim, a scrolling rail,
+// a card with a fixed aspect ratio, a two-column split that mirrors on the
+// second instance. What it deliberately still refuses is anything unbounded —
+// no raw CSS strings, no `position: fixed`, no unbounded z-index. Every value
+// below is parsed and re-emitted, never passed through.
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
@@ -26,6 +33,26 @@ const color = value => {
   if (typeof value !== 'string') return null;
   if (COLOR_TOKENS.includes(value)) return `var(--${value.replace(/[A-Z]/g, c => '-' + c.toLowerCase())})`;
   return HEX.test(value.trim()) ? value.trim() : null;
+};
+
+/**
+ * Translucent colour — `#rrggbb` plus an alpha percentage, as `rgb(… / …%)`.
+ *
+ * Scrims are the reason this exists. Every hero in every handoff puts copy on
+ * top of a photograph, which needs a dark translucent layer between them, and
+ * `opacity` cannot do it: opacity fades the element's children too, so the
+ * heading would fade with the scrim.
+ */
+const alphaColor = value => {
+  if (typeof value !== 'string') return null;
+  const match = value.trim().match(/^(#[0-9a-f]{3}|#[0-9a-f]{6})\s*@\s*(\d{1,3})%?$/i);
+  if (!match) return color(value);
+  const alpha = Number(match[2]);
+  if (!Number.isFinite(alpha) || alpha < 0 || alpha > 100) return null;
+  let hex = match[1].slice(1);
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${r} ${g} ${b} / ${alpha}%)`;
 };
 
 /** Length in pixels, bounded so a typo cannot push a page into absurdity. */
@@ -42,62 +69,412 @@ const num = (min, max, transform = v => String(v)) => value => {
 
 const oneOf = options => value => (options.includes(value) ? String(value) : null);
 
-const SHADOWS = { none: 'none', sm: 'var(--shadow-sm)', md: 'var(--shadow-md)', lg: 'var(--shadow-lg)' };
+/** Map a friendly keyword onto the CSS it means. */
+const keyword = table => value => (Object.prototype.hasOwnProperty.call(table, value) ? table[value] : null);
+
+/**
+ * A length that may also be a percentage, a viewport unit, or `auto`.
+ *
+ * Offsets need it (`top: 100%` puts a dropdown directly below its trigger) and
+ * so do full-height sections (`min-height: 100vh`). A bare number still means
+ * pixels, so the common case stays a number in the editor.
+ */
+const len = ({ max = 400, min = 0, units = ['%'], auto = false } = {}) => value => {
+  if (auto && value === 'auto') return 'auto';
+  const n = Number(value);
+  if (Number.isFinite(n) && value !== '' && value !== null) {
+    return n >= min && n <= max ? `${Math.round(n)}px` : null;
+  }
+  if (typeof value !== 'string') return null;
+  const match = value.trim().match(/^(-?\d{1,3}(?:\.\d+)?)(%|vh|vw|rem)$/);
+  if (!match) return null;
+  const unit = match[2];
+  if (!units.includes(unit)) return null;
+  const amount = Number(match[1]);
+  const ceiling = unit === '%' || unit === 'vh' || unit === 'vw' ? 200 : 40;
+  return amount >= -ceiling && amount <= ceiling ? `${amount}${unit}` : null;
+};
+
+/** `16/9`, `4/3`, `1/1` — the card and thumbnail shapes handoffs are drawn to. */
+const ratio = value => {
+  if (typeof value !== 'string') return null;
+  const match = value.trim().match(/^(\d{1,2}(?:\.\d)?)\s*\/\s*(\d{1,2}(?:\.\d)?)$/);
+  if (!match) return null;
+  const [w, h] = [Number(match[1]), Number(match[2])];
+  if (!(w > 0 && h > 0)) return null;
+  return `${w} / ${h}`;
+};
+
+/**
+ * An image URL for a background layer.
+ *
+ * Same-origin paths and https only, and the value is re-quoted on the way out,
+ * so a crafted value cannot break out of the `url()` and add declarations of
+ * its own. `javascript:` and `data:` are refused outright.
+ */
+const imageUrl = value => {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw || /["'()\\]|[\u0000-\u001f]/.test(raw)) return null;
+  if (!/^(?:https:\/\/[\w.-]+\/|\/(?!\/))/.test(raw)) return null;
+  return `url("${raw}")`;
+};
+
+/**
+ * A grid column template, as a bounded token list.
+ *
+ * Handoffs are full of templates the 12-column span model cannot say —
+ * `240px 200px 1fr` for a menu panel, `1.4fr 1fr 1fr 1fr` for a footer. Each
+ * token is validated individually and the list is re-joined, so the grammar is
+ * closed even though the result is expressive.
+ */
+const gridTemplate = value => {
+  if (typeof value !== 'string') return null;
+  const tokens = value.trim().split(/\s+/);
+  if (!tokens.length || tokens.length > 12) return null;
+  const out = [];
+  for (const token of tokens) {
+    if (token === 'auto' || token === 'min-content' || token === 'max-content') {
+      out.push(token);
+      continue;
+    }
+    const match = token.match(/^(\d{1,4}(?:\.\d{1,2})?)(fr|px|%)$/);
+    if (!match) return null;
+    const amount = Number(match[1]);
+    if (!(amount >= 0) || (match[2] === 'fr' && amount > 12) || (match[2] === '%' && amount > 100)) return null;
+    out.push(`${amount}${match[2]}`);
+  }
+  return out.join(' ');
+};
+
+const SHADOWS = { none: 'none', sm: 'var(--shadow-sm)', md: 'var(--shadow-md)', lg: 'var(--shadow-lg)', xl: 'var(--shadow-2xl)' };
+
+const TRANSITIONS = {
+  none: 'none',
+  fast: 'all .12s ease',
+  base: 'all .2s ease',
+  slow: 'all .35s ease',
+};
+
+const FLEX_ALIGN = { start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch', baseline: 'baseline' };
+const FLEX_JUSTIFY = {
+  start: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  between: 'space-between',
+  around: 'space-around',
+  evenly: 'space-evenly',
+};
 
 /**
  * Everything an override may set. `css` is the property emitted; `accepts`
  * normalises and validates the stored value — a value it returns null for is
- * dropped, never emitted.
+ * dropped, never emitted. `group` exists so the style panel can present ~40
+ * fields as a handful of collapsed sections rather than one flat wall.
+ *
+ * Declaration order in this object is also *emission* order, which matters in
+ * two places: `background` is a shorthand that would reset `background-image`,
+ * and `hide` must be able to win against an explicit `display`.
  */
 export const STYLE_FIELDS = {
-  background: { css: 'background', accepts: color, label: 'Background' },
-  textColor: { css: 'color', accepts: color, label: 'Text colour' },
-  paddingTop: { css: 'padding-top', accepts: px(), label: 'Padding top' },
-  paddingRight: { css: 'padding-right', accepts: px(), label: 'Padding right' },
-  paddingBottom: { css: 'padding-bottom', accepts: px(), label: 'Padding bottom' },
-  paddingLeft: { css: 'padding-left', accepts: px(), label: 'Padding left' },
-  marginTop: { css: 'margin-top', accepts: px(), label: 'Margin top' },
-  marginBottom: { css: 'margin-bottom', accepts: px(), label: 'Margin bottom' },
-  textAlign: { css: 'text-align', accepts: oneOf(['left', 'center', 'right']), label: 'Text align' },
-  maxWidth: { css: 'max-width', accepts: px(1920), label: 'Max width' },
-  radius: { css: 'border-radius', accepts: px(80), label: 'Corner radius' },
-  gap: { css: 'gap', accepts: px(160), label: 'Gap' },
+  /* ---------------------------------------------------------------- layout */
+  display: {
+    css: 'display',
+    accepts: oneOf(['block', 'flex', 'inline-flex', 'grid', 'inline-block']),
+    label: 'Display',
+    group: 'layout',
+    options: ['block', 'flex', 'inline-flex', 'grid', 'inline-block'],
+  },
+  gridColumns: {
+    css: 'grid-template-columns',
+    accepts: gridTemplate,
+    label: 'Grid columns',
+    group: 'layout',
+    hint: 'A column list such as 1fr 1fr, 240px 200px 1fr, or 1.4fr 1fr 1fr 1fr.',
+  },
+  flexDirection: {
+    css: 'flex-direction',
+    accepts: oneOf(['row', 'row-reverse', 'column', 'column-reverse']),
+    label: 'Direction',
+    group: 'layout',
+    options: ['row', 'row-reverse', 'column', 'column-reverse'],
+  },
+  flexWrap: {
+    css: 'flex-wrap',
+    accepts: oneOf(['wrap', 'nowrap']),
+    label: 'Wrap',
+    group: 'layout',
+    options: ['wrap', 'nowrap'],
+  },
+  alignItems: {
+    css: 'align-items',
+    accepts: keyword(FLEX_ALIGN),
+    label: 'Align',
+    group: 'layout',
+    options: Object.keys(FLEX_ALIGN),
+  },
+  justifyContent: {
+    css: 'justify-content',
+    accepts: keyword(FLEX_JUSTIFY),
+    label: 'Justify',
+    group: 'layout',
+    options: Object.keys(FLEX_JUSTIFY),
+  },
+  flexBasis: {
+    css: 'flex-basis',
+    accepts: len({ max: 1600, units: ['%', 'vw'], auto: true }),
+    label: 'Basis',
+    group: 'layout',
+  },
+  flexGrow: { css: 'flex-grow', accepts: num(0, 12), label: 'Grow', group: 'layout' },
+  flexShrink: { css: 'flex-shrink', accepts: num(0, 12), label: 'Shrink', group: 'layout' },
+  /**
+   * Visual order without touching the tree.
+   *
+   * Handoffs alternate split sections — image left, then image right — and
+   * mirroring by reordering children breaks reading order for a screen reader
+   * and makes the mobile stack wrong. `order` per breakpoint keeps one DOM
+   * order and lets each instance present differently.
+   */
+  order: { css: 'order', accepts: num(-12, 12), label: 'Order', group: 'layout' },
+  gap: { css: 'gap', accepts: px(160), label: 'Gap', group: 'layout' },
+  rowGap: { css: 'row-gap', accepts: px(160), label: 'Row gap', group: 'layout' },
+  columnGap: { css: 'column-gap', accepts: px(160), label: 'Column gap', group: 'layout' },
+
+  /* -------------------------------------------------------------- position */
+  /**
+   * `fixed` is absent on purpose. A fixed node is viewport-anchored, escapes
+   * its section, cannot be scrolled away from, and in the editor canvas floats
+   * over the tooling that would let you undo it. Sticky covers the legitimate
+   * case (a header that pins), and absolute covers layering.
+   */
+  position: {
+    css: 'position',
+    accepts: oneOf(['static', 'relative', 'absolute', 'sticky']),
+    label: 'Position',
+    group: 'position',
+    options: ['static', 'relative', 'absolute', 'sticky'],
+  },
+  inset: { css: 'inset', accepts: len({ max: 400, min: -400, units: ['%'] }), label: 'Inset (all sides)', group: 'position' },
+  top: { css: 'top', accepts: len({ max: 2000, min: -2000, units: ['%', 'vh'], auto: true }), label: 'Top', group: 'position' },
+  right: { css: 'right', accepts: len({ max: 2000, min: -2000, units: ['%', 'vw'], auto: true }), label: 'Right', group: 'position' },
+  bottom: { css: 'bottom', accepts: len({ max: 2000, min: -2000, units: ['%', 'vh'], auto: true }), label: 'Bottom', group: 'position' },
+  left: { css: 'left', accepts: len({ max: 2000, min: -2000, units: ['%', 'vw'], auto: true }), label: 'Left', group: 'position' },
+  zIndex: { css: 'z-index', accepts: num(0, 60), label: 'Layer', group: 'position', hint: '0–60. Site chrome sits at 70 and above.' },
+  overflow: {
+    css: 'overflow',
+    accepts: oneOf(['visible', 'hidden', 'auto', 'clip']),
+    label: 'Overflow',
+    group: 'position',
+    options: ['visible', 'hidden', 'auto', 'clip'],
+  },
+  overflowX: {
+    css: 'overflow-x',
+    accepts: oneOf(['visible', 'hidden', 'auto', 'clip']),
+    label: 'Overflow across',
+    group: 'position',
+    options: ['visible', 'hidden', 'auto', 'clip'],
+  },
+  overflowY: {
+    css: 'overflow-y',
+    accepts: oneOf(['visible', 'hidden', 'auto', 'clip']),
+    label: 'Overflow down',
+    group: 'position',
+    options: ['visible', 'hidden', 'auto', 'clip'],
+  },
+
+  /* ---------------------------------------------------------------- sizing */
+  width: { css: 'width', accepts: len({ max: 1920, units: ['%', 'vw'], auto: true }), label: 'Width', group: 'sizing' },
+  maxWidth: { css: 'max-width', accepts: len({ max: 1920, units: ['%', 'vw'], auto: false }), label: 'Max width', group: 'sizing' },
+  minHeight: { css: 'min-height', accepts: len({ max: 1600, units: ['%', 'vh'] }), label: 'Min height', group: 'sizing' },
+  height: { css: 'height', accepts: len({ max: 1600, units: ['%', 'vh'], auto: true }), label: 'Height', group: 'sizing' },
+  aspectRatio: {
+    css: 'aspect-ratio',
+    accepts: ratio,
+    label: 'Aspect ratio',
+    group: 'sizing',
+    hint: 'Width / height, such as 16/9, 4/3 or 1/1. Keeps cards the same shape whatever the image.',
+  },
+
+  /* -------------------------------------------------------------- spacing */
+  paddingTop: { css: 'padding-top', accepts: px(), label: 'Padding top', group: 'spacing' },
+  paddingRight: { css: 'padding-right', accepts: px(), label: 'Padding right', group: 'spacing' },
+  paddingBottom: { css: 'padding-bottom', accepts: px(), label: 'Padding bottom', group: 'spacing' },
+  paddingLeft: { css: 'padding-left', accepts: px(), label: 'Padding left', group: 'spacing' },
+  /**
+   * Negative margins are allowed on the block axis only.
+   *
+   * Overlap is a real pattern — the quick-links bar that rides up over the
+   * hero — and it is always vertical. Negative inline margins are how a node
+   * accidentally hangs off the side of the page and causes a horizontal
+   * scrollbar on a phone, so those stay non-negative.
+   */
+  marginTop: { css: 'margin-top', accepts: px(400, -400), label: 'Margin top', group: 'spacing' },
+  marginBottom: { css: 'margin-bottom', accepts: px(400, -400), label: 'Margin bottom', group: 'spacing' },
+  marginLeft: { css: 'margin-left', accepts: len({ max: 400, units: ['%'], auto: true }), label: 'Margin left', group: 'spacing' },
+  marginRight: { css: 'margin-right', accepts: len({ max: 400, units: ['%'], auto: true }), label: 'Margin right', group: 'spacing' },
+
+  /* ------------------------------------------------------------ appearance */
+  background: { css: 'background', accepts: alphaColor, label: 'Background', group: 'appearance', hint: 'A colour, or #000@60% for a translucent scrim.' },
+  backgroundImage: { css: 'background-image', accepts: imageUrl, label: 'Background image', group: 'appearance' },
+  backgroundSize: {
+    css: 'background-size',
+    accepts: oneOf(['cover', 'contain', 'auto']),
+    label: 'Background size',
+    group: 'appearance',
+    options: ['cover', 'contain', 'auto'],
+  },
+  backgroundPosition: {
+    css: 'background-position',
+    accepts: oneOf(['center', 'top', 'bottom', 'left', 'right', 'top left', 'top right', 'bottom left', 'bottom right']),
+    label: 'Background position',
+    group: 'appearance',
+    options: ['center', 'top', 'bottom', 'left', 'right', 'top left', 'top right', 'bottom left', 'bottom right'],
+  },
+  backgroundRepeat: {
+    css: 'background-repeat',
+    accepts: oneOf(['no-repeat', 'repeat', 'repeat-x', 'repeat-y']),
+    label: 'Background repeat',
+    group: 'appearance',
+    options: ['no-repeat', 'repeat', 'repeat-x', 'repeat-y'],
+  },
+  objectFit: {
+    css: 'object-fit',
+    accepts: oneOf(['cover', 'contain', 'fill', 'none', 'scale-down']),
+    label: 'Image fit',
+    group: 'appearance',
+    options: ['cover', 'contain', 'fill', 'none', 'scale-down'],
+  },
+  objectPosition: {
+    css: 'object-position',
+    accepts: oneOf(['center', 'top', 'bottom', 'left', 'right']),
+    label: 'Image focus',
+    group: 'appearance',
+    options: ['center', 'top', 'bottom', 'left', 'right'],
+  },
+  radius: { css: 'border-radius', accepts: px(999), label: 'Corner radius', group: 'appearance' },
+  radiusTopLeft: { css: 'border-top-left-radius', accepts: px(999), label: 'Radius top left', group: 'appearance' },
+  radiusTopRight: { css: 'border-top-right-radius', accepts: px(999), label: 'Radius top right', group: 'appearance' },
+  radiusBottomRight: { css: 'border-bottom-right-radius', accepts: px(999), label: 'Radius bottom right', group: 'appearance' },
+  radiusBottomLeft: { css: 'border-bottom-left-radius', accepts: px(999), label: 'Radius bottom left', group: 'appearance' },
   shadow: {
     css: 'box-shadow',
     accepts: value => SHADOWS[value] ?? null,
     label: 'Shadow',
+    group: 'appearance',
     options: Object.keys(SHADOWS),
   },
-  fontSize: { css: 'font-size', accepts: px(160, 8), label: 'Font size' },
+  opacity: { css: 'opacity', accepts: num(0, 100, n => String(Math.round(n) / 100)), label: 'Opacity (%)', group: 'appearance' },
+
+  /* --------------------------------------------------------------- borders */
+  borderWidth: { css: 'border-width', accepts: px(12), label: 'Border width', group: 'border' },
+  borderTopWidth: { css: 'border-top-width', accepts: px(12), label: 'Border top', group: 'border' },
+  borderRightWidth: { css: 'border-right-width', accepts: px(12), label: 'Border right', group: 'border' },
+  borderBottomWidth: { css: 'border-bottom-width', accepts: px(12), label: 'Border bottom', group: 'border' },
+  borderLeftWidth: { css: 'border-left-width', accepts: px(12), label: 'Border left', group: 'border' },
+  borderStyle: {
+    css: 'border-style',
+    accepts: oneOf(['solid', 'dashed', 'dotted']),
+    label: 'Border style',
+    group: 'border',
+    options: ['solid', 'dashed', 'dotted'],
+  },
+  borderColor: { css: 'border-color', accepts: alphaColor, label: 'Border colour', group: 'border' },
+
+  /* ------------------------------------------------------------ typography */
+  textColor: { css: 'color', accepts: alphaColor, label: 'Text colour', group: 'text' },
+  textAlign: { css: 'text-align', accepts: oneOf(['left', 'center', 'right']), label: 'Text align', group: 'text' },
+  fontSize: { css: 'font-size', accepts: px(160, 8), label: 'Font size', group: 'text' },
   fontWeight: {
     css: 'font-weight',
-    accepts: oneOf(['400', '500', '600', '700', '800']),
+    accepts: oneOf(['300', '400', '500', '600', '700', '800', '900']),
     label: 'Font weight',
-    options: ['400', '500', '600', '700', '800'],
+    group: 'text',
+    options: ['300', '400', '500', '600', '700', '800', '900'],
   },
-  lineHeight: { css: 'line-height', accepts: num(0.8, 3), label: 'Line height' },
-  letterSpacing: { css: 'letter-spacing', accepts: px(20, -3), label: 'Letter spacing' },
-  opacity: { css: 'opacity', accepts: num(0, 100, n => String(Math.round(n) / 100)), label: 'Opacity (%)' },
-  borderWidth: { css: 'border-width', accepts: px(12), label: 'Border width' },
-  borderColor: { css: 'border-color', accepts: color, label: 'Border colour' },
+  lineHeight: { css: 'line-height', accepts: num(0.8, 3), label: 'Line height', group: 'text' },
+  letterSpacing: { css: 'letter-spacing', accepts: px(20, -3), label: 'Letter spacing', group: 'text' },
+  textTransform: {
+    css: 'text-transform',
+    accepts: oneOf(['none', 'uppercase', 'lowercase', 'capitalize']),
+    label: 'Text case',
+    group: 'text',
+    options: ['none', 'uppercase', 'lowercase', 'capitalize'],
+  },
+  whiteSpace: {
+    css: 'white-space',
+    accepts: oneOf(['normal', 'nowrap']),
+    label: 'Wrapping',
+    group: 'text',
+    options: ['normal', 'nowrap'],
+  },
+
+  /* ---------------------------------------------------------------- motion */
+  /**
+   * Transform is exposed as four separate, bounded fields rather than one CSS
+   * string, and composed on the way out. A free `transform` value is an
+   * arbitrary-function hole; a slider per axis is also simply a better control.
+   */
+  translateX: { css: 'transform', composes: true, accepts: len({ max: 400, min: -400, units: ['%'] }), label: 'Move across', group: 'motion' },
+  translateY: { css: 'transform', composes: true, accepts: len({ max: 400, min: -400, units: ['%'] }), label: 'Move down', group: 'motion' },
+  scale: { css: 'transform', composes: true, accepts: num(0.2, 3), label: 'Scale', group: 'motion' },
+  rotate: { css: 'transform', composes: true, accepts: num(-180, 180, n => `${n}deg`), label: 'Rotate', group: 'motion' },
+  transition: {
+    css: 'transition',
+    accepts: value => TRANSITIONS[value] ?? null,
+    label: 'Transition',
+    group: 'motion',
+    options: Object.keys(TRANSITIONS),
+  },
+
   /**
    * Responsive visibility. `true` compiles to display:none in that bucket —
    * the mechanism behind "hide this on mobile", and the reason a device-
    * specific ask never has to become a structural change that hits every
-   * device.
+   * device. Emitted last so it beats an explicit `display` in the same bucket.
    */
-  hide: { css: 'display', accepts: value => (value === true || value === 'true' ? 'none' : null), label: 'Hide' },
+  hide: { css: 'display', accepts: value => (value === true || value === 'true' ? 'none' : null), label: 'Hide', group: 'visibility' },
 };
+
+/** Emission order, so shorthands cannot clobber the longhands set alongside them. */
+const FIELD_ORDER = Object.keys(STYLE_FIELDS);
+
+/** The transform components, in the order they compose. */
+const TRANSFORM_PARTS = [
+  ['translateX', v => `translateX(${v})`],
+  ['translateY', v => `translateY(${v})`],
+  ['rotate', v => `rotate(${v})`],
+  ['scale', v => `scale(${v})`],
+];
+
+/** Field groups in panel order, for the style inspector. */
+export const STYLE_GROUPS = [
+  { key: 'layout', label: 'Layout' },
+  { key: 'position', label: 'Position & layering' },
+  { key: 'sizing', label: 'Size' },
+  { key: 'spacing', label: 'Spacing' },
+  { key: 'appearance', label: 'Appearance' },
+  { key: 'border', label: 'Border' },
+  { key: 'text', label: 'Text' },
+  { key: 'motion', label: 'Motion' },
+  { key: 'visibility', label: 'Visibility' },
+];
 
 /**
  * Desktop-first buckets, the way every mainstream builder reads them: `base`
- * applies everywhere, `tablet` narrows it at 1023px and below, `mobile` again
- * at 767px and below. The breakpoints are the two blocks.css already uses.
+ * applies everywhere, `tablet` narrows it at 1100px and below, `mobile` again
+ * at 640px and below.
+ *
+ * The values match the breakpoints the design handoffs are drawn to. They were
+ * 1023/767 — near-miss values that put the nav collapse 77px away from where
+ * the design said it should happen, which is exactly the kind of small,
+ * repeated infidelity that makes an imported design feel wrong without anyone
+ * being able to say why. blocks.css uses the same two numbers.
  */
 export const STYLE_BUCKETS = [
   { key: 'base', media: null },
-  { key: 'tablet', media: '(max-width: 1023px)' },
-  { key: 'mobile', media: '(max-width: 767px)' },
+  { key: 'tablet', media: '(max-width: 1100px)' },
+  { key: 'mobile', media: '(max-width: 640px)' },
 ];
 
 /** Normalise whatever is stored into { base, tablet, mobile } of valid fields only. */
@@ -136,16 +513,44 @@ export function unknownStyleKeys(raw) {
 }
 
 function declarationsFor(values) {
+  const entries = Object.entries(values ?? {})
+    .filter(([field]) => STYLE_FIELDS[field])
+    .sort((a, b) => FIELD_ORDER.indexOf(a[0]) - FIELD_ORDER.indexOf(b[0]));
+
   const lines = [];
-  for (const [field, value] of Object.entries(values ?? {})) {
+  const axes = {};
+  let sawBorderWidth = false;
+  let sawBorderStyle = false;
+
+  for (const [field, value] of entries) {
     const spec = STYLE_FIELDS[field];
-    if (!spec) continue;
     const compiled = spec.accepts(value);
-    if (compiled !== null) lines.push(`${spec.css}:${compiled}`);
+    if (compiled === null) continue;
+
+    if (TRANSFORM_PARTS.some(([key]) => key === field)) {
+      axes[field] = compiled;
+      continue;
+    }
+    if (field === 'borderStyle') sawBorderStyle = true;
+    if (spec.css.startsWith('border-') && spec.css.endsWith('-width')) sawBorderWidth = true;
+    if (spec.css === 'border-width') sawBorderWidth = true;
+
+    lines.push(`${spec.css}:${compiled}`);
   }
+
   // A border width without a style renders nothing: the element default is
   // border-style none. Setting the width implies a visible border.
-  if (lines.some(l => l.startsWith('border-width:'))) lines.push('border-style:solid');
+  if (sawBorderWidth && !sawBorderStyle) lines.push('border-style:solid');
+
+  // Transform functions do not commute, so the axes compose in a fixed order —
+  // translate, then rotate, then scale — rather than in whatever order the
+  // editor happened to write the keys. Otherwise the same four values could
+  // render two different results.
+  const transform = TRANSFORM_PARTS.filter(([key]) => axes[key] !== undefined).map(([key, format]) =>
+    format(axes[key]),
+  );
+  if (transform.length) lines.push(`transform:${transform.join(' ')}`);
+
   return lines;
 }
 

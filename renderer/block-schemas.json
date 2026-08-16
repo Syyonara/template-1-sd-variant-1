@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "4.3.0",
+  "rendererVersion": "4.4.0",
   "documentVersion": 2,
   "gridColumns": 12,
   "tokenGroups": {
@@ -146,14 +146,14 @@
     {
       "id": "allPosts",
       "label": "All posts",
-      "description": "Every blog post.",
+      "description": "Each individual blog post page — not the list of posts.",
       "ref": null,
       "specificity": 200
     },
     {
       "id": "blog",
       "label": "Blog index",
-      "description": "The page that lists your posts.",
+      "description": "Only the page that lists your posts (/blog) — individual posts are \"All posts\".",
       "ref": null,
       "specificity": 300
     },
@@ -307,105 +307,553 @@
     "tablet",
     "mobile"
   ],
+  "styleBreakpoints": {
+    "base": null,
+    "tablet": "(max-width: 1100px)",
+    "mobile": "(max-width: 640px)"
+  },
+  "styleGroups": [
+    {
+      "key": "layout",
+      "label": "Layout"
+    },
+    {
+      "key": "position",
+      "label": "Position & layering"
+    },
+    {
+      "key": "sizing",
+      "label": "Size"
+    },
+    {
+      "key": "spacing",
+      "label": "Spacing"
+    },
+    {
+      "key": "appearance",
+      "label": "Appearance"
+    },
+    {
+      "key": "border",
+      "label": "Border"
+    },
+    {
+      "key": "text",
+      "label": "Text"
+    },
+    {
+      "key": "motion",
+      "label": "Motion"
+    },
+    {
+      "key": "visibility",
+      "label": "Visibility"
+    }
+  ],
   "styleFields": {
-    "background": {
-      "css": "background",
-      "label": "Background"
+    "display": {
+      "css": "display",
+      "label": "Display",
+      "group": "layout",
+      "options": [
+        "block",
+        "flex",
+        "inline-flex",
+        "grid",
+        "inline-block"
+      ]
     },
-    "textColor": {
-      "css": "color",
-      "label": "Text colour"
+    "gridColumns": {
+      "css": "grid-template-columns",
+      "label": "Grid columns",
+      "group": "layout",
+      "hint": "A column list such as 1fr 1fr, 240px 200px 1fr, or 1.4fr 1fr 1fr 1fr."
     },
-    "paddingTop": {
-      "css": "padding-top",
-      "label": "Padding top"
+    "flexDirection": {
+      "css": "flex-direction",
+      "label": "Direction",
+      "group": "layout",
+      "options": [
+        "row",
+        "row-reverse",
+        "column",
+        "column-reverse"
+      ]
     },
-    "paddingRight": {
-      "css": "padding-right",
-      "label": "Padding right"
+    "flexWrap": {
+      "css": "flex-wrap",
+      "label": "Wrap",
+      "group": "layout",
+      "options": [
+        "wrap",
+        "nowrap"
+      ]
     },
-    "paddingBottom": {
-      "css": "padding-bottom",
-      "label": "Padding bottom"
+    "alignItems": {
+      "css": "align-items",
+      "label": "Align",
+      "group": "layout",
+      "options": [
+        "start",
+        "center",
+        "end",
+        "stretch",
+        "baseline"
+      ]
     },
-    "paddingLeft": {
-      "css": "padding-left",
-      "label": "Padding left"
+    "justifyContent": {
+      "css": "justify-content",
+      "label": "Justify",
+      "group": "layout",
+      "options": [
+        "start",
+        "center",
+        "end",
+        "between",
+        "around",
+        "evenly"
+      ]
     },
-    "marginTop": {
-      "css": "margin-top",
-      "label": "Margin top"
+    "flexBasis": {
+      "css": "flex-basis",
+      "label": "Basis",
+      "group": "layout"
     },
-    "marginBottom": {
-      "css": "margin-bottom",
-      "label": "Margin bottom"
+    "flexGrow": {
+      "css": "flex-grow",
+      "label": "Grow",
+      "group": "layout"
     },
-    "textAlign": {
-      "css": "text-align",
-      "label": "Text align"
+    "flexShrink": {
+      "css": "flex-shrink",
+      "label": "Shrink",
+      "group": "layout"
     },
-    "maxWidth": {
-      "css": "max-width",
-      "label": "Max width"
-    },
-    "radius": {
-      "css": "border-radius",
-      "label": "Corner radius"
+    "order": {
+      "css": "order",
+      "label": "Order",
+      "group": "layout"
     },
     "gap": {
       "css": "gap",
-      "label": "Gap"
+      "label": "Gap",
+      "group": "layout"
+    },
+    "rowGap": {
+      "css": "row-gap",
+      "label": "Row gap",
+      "group": "layout"
+    },
+    "columnGap": {
+      "css": "column-gap",
+      "label": "Column gap",
+      "group": "layout"
+    },
+    "position": {
+      "css": "position",
+      "label": "Position",
+      "group": "position",
+      "options": [
+        "static",
+        "relative",
+        "absolute",
+        "sticky"
+      ]
+    },
+    "inset": {
+      "css": "inset",
+      "label": "Inset (all sides)",
+      "group": "position"
+    },
+    "top": {
+      "css": "top",
+      "label": "Top",
+      "group": "position"
+    },
+    "right": {
+      "css": "right",
+      "label": "Right",
+      "group": "position"
+    },
+    "bottom": {
+      "css": "bottom",
+      "label": "Bottom",
+      "group": "position"
+    },
+    "left": {
+      "css": "left",
+      "label": "Left",
+      "group": "position"
+    },
+    "zIndex": {
+      "css": "z-index",
+      "label": "Layer",
+      "group": "position",
+      "hint": "0–60. Site chrome sits at 70 and above."
+    },
+    "overflow": {
+      "css": "overflow",
+      "label": "Overflow",
+      "group": "position",
+      "options": [
+        "visible",
+        "hidden",
+        "auto",
+        "clip"
+      ]
+    },
+    "overflowX": {
+      "css": "overflow-x",
+      "label": "Overflow across",
+      "group": "position",
+      "options": [
+        "visible",
+        "hidden",
+        "auto",
+        "clip"
+      ]
+    },
+    "overflowY": {
+      "css": "overflow-y",
+      "label": "Overflow down",
+      "group": "position",
+      "options": [
+        "visible",
+        "hidden",
+        "auto",
+        "clip"
+      ]
+    },
+    "width": {
+      "css": "width",
+      "label": "Width",
+      "group": "sizing"
+    },
+    "maxWidth": {
+      "css": "max-width",
+      "label": "Max width",
+      "group": "sizing"
+    },
+    "minHeight": {
+      "css": "min-height",
+      "label": "Min height",
+      "group": "sizing"
+    },
+    "height": {
+      "css": "height",
+      "label": "Height",
+      "group": "sizing"
+    },
+    "aspectRatio": {
+      "css": "aspect-ratio",
+      "label": "Aspect ratio",
+      "group": "sizing",
+      "hint": "Width / height, such as 16/9, 4/3 or 1/1. Keeps cards the same shape whatever the image."
+    },
+    "paddingTop": {
+      "css": "padding-top",
+      "label": "Padding top",
+      "group": "spacing"
+    },
+    "paddingRight": {
+      "css": "padding-right",
+      "label": "Padding right",
+      "group": "spacing"
+    },
+    "paddingBottom": {
+      "css": "padding-bottom",
+      "label": "Padding bottom",
+      "group": "spacing"
+    },
+    "paddingLeft": {
+      "css": "padding-left",
+      "label": "Padding left",
+      "group": "spacing"
+    },
+    "marginTop": {
+      "css": "margin-top",
+      "label": "Margin top",
+      "group": "spacing"
+    },
+    "marginBottom": {
+      "css": "margin-bottom",
+      "label": "Margin bottom",
+      "group": "spacing"
+    },
+    "marginLeft": {
+      "css": "margin-left",
+      "label": "Margin left",
+      "group": "spacing"
+    },
+    "marginRight": {
+      "css": "margin-right",
+      "label": "Margin right",
+      "group": "spacing"
+    },
+    "background": {
+      "css": "background",
+      "label": "Background",
+      "group": "appearance",
+      "hint": "A colour, or #000@60% for a translucent scrim."
+    },
+    "backgroundImage": {
+      "css": "background-image",
+      "label": "Background image",
+      "group": "appearance"
+    },
+    "backgroundSize": {
+      "css": "background-size",
+      "label": "Background size",
+      "group": "appearance",
+      "options": [
+        "cover",
+        "contain",
+        "auto"
+      ]
+    },
+    "backgroundPosition": {
+      "css": "background-position",
+      "label": "Background position",
+      "group": "appearance",
+      "options": [
+        "center",
+        "top",
+        "bottom",
+        "left",
+        "right",
+        "top left",
+        "top right",
+        "bottom left",
+        "bottom right"
+      ]
+    },
+    "backgroundRepeat": {
+      "css": "background-repeat",
+      "label": "Background repeat",
+      "group": "appearance",
+      "options": [
+        "no-repeat",
+        "repeat",
+        "repeat-x",
+        "repeat-y"
+      ]
+    },
+    "objectFit": {
+      "css": "object-fit",
+      "label": "Image fit",
+      "group": "appearance",
+      "options": [
+        "cover",
+        "contain",
+        "fill",
+        "none",
+        "scale-down"
+      ]
+    },
+    "objectPosition": {
+      "css": "object-position",
+      "label": "Image focus",
+      "group": "appearance",
+      "options": [
+        "center",
+        "top",
+        "bottom",
+        "left",
+        "right"
+      ]
+    },
+    "radius": {
+      "css": "border-radius",
+      "label": "Corner radius",
+      "group": "appearance"
+    },
+    "radiusTopLeft": {
+      "css": "border-top-left-radius",
+      "label": "Radius top left",
+      "group": "appearance"
+    },
+    "radiusTopRight": {
+      "css": "border-top-right-radius",
+      "label": "Radius top right",
+      "group": "appearance"
+    },
+    "radiusBottomRight": {
+      "css": "border-bottom-right-radius",
+      "label": "Radius bottom right",
+      "group": "appearance"
+    },
+    "radiusBottomLeft": {
+      "css": "border-bottom-left-radius",
+      "label": "Radius bottom left",
+      "group": "appearance"
     },
     "shadow": {
       "css": "box-shadow",
       "label": "Shadow",
+      "group": "appearance",
       "options": [
         "none",
         "sm",
         "md",
-        "lg"
+        "lg",
+        "xl"
       ]
+    },
+    "opacity": {
+      "css": "opacity",
+      "label": "Opacity (%)",
+      "group": "appearance"
+    },
+    "borderWidth": {
+      "css": "border-width",
+      "label": "Border width",
+      "group": "border"
+    },
+    "borderTopWidth": {
+      "css": "border-top-width",
+      "label": "Border top",
+      "group": "border"
+    },
+    "borderRightWidth": {
+      "css": "border-right-width",
+      "label": "Border right",
+      "group": "border"
+    },
+    "borderBottomWidth": {
+      "css": "border-bottom-width",
+      "label": "Border bottom",
+      "group": "border"
+    },
+    "borderLeftWidth": {
+      "css": "border-left-width",
+      "label": "Border left",
+      "group": "border"
+    },
+    "borderStyle": {
+      "css": "border-style",
+      "label": "Border style",
+      "group": "border",
+      "options": [
+        "solid",
+        "dashed",
+        "dotted"
+      ]
+    },
+    "borderColor": {
+      "css": "border-color",
+      "label": "Border colour",
+      "group": "border"
+    },
+    "textColor": {
+      "css": "color",
+      "label": "Text colour",
+      "group": "text"
+    },
+    "textAlign": {
+      "css": "text-align",
+      "label": "Text align",
+      "group": "text"
     },
     "fontSize": {
       "css": "font-size",
-      "label": "Font size"
+      "label": "Font size",
+      "group": "text"
     },
     "fontWeight": {
       "css": "font-weight",
       "label": "Font weight",
+      "group": "text",
       "options": [
+        "300",
         "400",
         "500",
         "600",
         "700",
-        "800"
+        "800",
+        "900"
       ]
     },
     "lineHeight": {
       "css": "line-height",
-      "label": "Line height"
+      "label": "Line height",
+      "group": "text"
     },
     "letterSpacing": {
       "css": "letter-spacing",
-      "label": "Letter spacing"
+      "label": "Letter spacing",
+      "group": "text"
     },
-    "opacity": {
-      "css": "opacity",
-      "label": "Opacity (%)"
+    "textTransform": {
+      "css": "text-transform",
+      "label": "Text case",
+      "group": "text",
+      "options": [
+        "none",
+        "uppercase",
+        "lowercase",
+        "capitalize"
+      ]
     },
-    "borderWidth": {
-      "css": "border-width",
-      "label": "Border width"
+    "whiteSpace": {
+      "css": "white-space",
+      "label": "Wrapping",
+      "group": "text",
+      "options": [
+        "normal",
+        "nowrap"
+      ]
     },
-    "borderColor": {
-      "css": "border-color",
-      "label": "Border colour"
+    "translateX": {
+      "css": "transform",
+      "label": "Move across",
+      "group": "motion",
+      "composes": true
+    },
+    "translateY": {
+      "css": "transform",
+      "label": "Move down",
+      "group": "motion",
+      "composes": true
+    },
+    "scale": {
+      "css": "transform",
+      "label": "Scale",
+      "group": "motion",
+      "composes": true
+    },
+    "rotate": {
+      "css": "transform",
+      "label": "Rotate",
+      "group": "motion",
+      "composes": true
+    },
+    "transition": {
+      "css": "transition",
+      "label": "Transition",
+      "group": "motion",
+      "options": [
+        "none",
+        "fast",
+        "base",
+        "slow"
+      ]
     },
     "hide": {
       "css": "display",
-      "label": "Hide"
+      "label": "Hide",
+      "group": "visibility"
     }
   },
+  "behaviours": [
+    "carousel",
+    "filter",
+    "dropdown",
+    "drawer",
+    "rotator",
+    "scrollstate",
+    "dependentselect",
+    "mapsync"
+  ],
   "layout": [
     {
       "id": "section",

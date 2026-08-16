@@ -15,10 +15,10 @@
   padding-inline: var(--container-pad, var(--space-4));
   box-sizing: border-box;
 }
-@media (max-width: 1023px) {
+@media (max-width: 1100px) {
   .bz-container { padding-inline: var(--container-pad-tablet, var(--container-pad, var(--space-4))); }
 }
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .bz-container { padding-inline: var(--container-pad-mobile, var(--container-pad, var(--space-4))); }
 }
 
@@ -74,13 +74,13 @@
 /* Columns stack rather than shrink. Which width they stack at is a per-row
    choice, because a two-column hero and a four-column feature grid do not want
    the same answer. */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .bz-row--stack-tablet > .bz-col,
   .bz-row--stack-mobile > .bz-col { grid-column: 1 / -1; }
   .bz-row--stack-tablet.bz-row--rev,
   .bz-row--stack-mobile.bz-row--rev { display: flex; flex-direction: column-reverse; }
 }
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 641px) and (max-width: 1100px) {
   .bz-row--stack-tablet > .bz-col { grid-column: 1 / -1; }
   .bz-row--stack-tablet.bz-row--rev { display: flex; flex-direction: column-reverse; }
 }
@@ -134,12 +134,13 @@
 
 .bz-grid { display: grid; gap: var(--space-5); }
 
-@media (min-width: 768px) {
+@media (min-width: 641px) {
   .bz-grid--2 { grid-template-columns: repeat(2, 1fr); }
-  .bz-grid--3 { grid-template-columns: repeat(3, 1fr); }
+  .bz-grid--3 { grid-template-columns: repeat(2, 1fr); }
   .bz-grid--4 { grid-template-columns: repeat(2, 1fr); }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1101px) {
+  .bz-grid--3 { grid-template-columns: repeat(3, 1fr); }
   .bz-grid--4 { grid-template-columns: repeat(4, 1fr); }
 }
 
@@ -225,7 +226,7 @@
 .bz-herosearch .bz-input { flex: 1 1 12rem; }
 
 .bz-split { display: grid; gap: var(--space-6); align-items: center; }
-@media (min-width: 900px) { .bz-split { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 641px) { .bz-split { grid-template-columns: 1fr 1fr; } }
 
 /* ----------------------------------------------------------------- stats */
 
@@ -237,7 +238,7 @@
 .bz-stat__l { font-size: var(--text-small); color: var(--muted); margin: var(--space-1) 0 0; }
 .bz-block--statBand .bz-stat__l { color: rgba(255, 255, 255, 0.7); }
 .bz-band { display: grid; gap: var(--space-6); align-items: center; }
-@media (min-width: 900px) { .bz-band { grid-template-columns: 1.3fr 1fr; } }
+@media (min-width: 641px) { .bz-band { grid-template-columns: 1.3fr 1fr; } }
 .bz-band__b { color: rgba(255, 255, 255, 0.78); max-width: 34rem; }
 
 /* --------------------------------------------------------------- content */
@@ -282,7 +283,7 @@ a.bz-card:hover { border-color: var(--muted); }
 .bz-loc__s { font-size: var(--text-small); color: var(--muted); }
 
 .bz-footerblock { display: grid; gap: var(--space-6); }
-@media (min-width: 768px) { .bz-footerblock { grid-template-columns: 1.4fr repeat(auto-fit, minmax(8rem, 1fr)); } }
+@media (min-width: 641px) { .bz-footerblock { grid-template-columns: 1.4fr repeat(auto-fit, minmax(8rem, 1fr)); } }
 .bz-fbrand__n { font: 800 var(--text-h3) / 1.2 var(--font-heading); color: #fff; margin: 0 0 var(--space-2); }
 .bz-fbrand__t { font-size: var(--text-small); color: rgba(255, 255, 255, 0.7); }
 .bz-fcol__h { font: 700 var(--text-eyebrow) / 1 var(--font-heading); letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); margin: 0 0 var(--space-3); }
@@ -385,7 +386,7 @@ a.bz-card:hover { border-color: var(--muted); }
 .bz-bar--ink .bz-block p { color: rgba(255, 255, 255, 0.75); font-size: var(--text-small); }
 
 /* A footer stacks on a phone; a header does not, because the menu collapses. */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .bz-bar--ink .bz-bar__inner { flex-direction: column; align-items: flex-start; }
   .bz-bar--ink .bz-bar__cell { width: 100%; justify-content: flex-start; }
 }
@@ -453,7 +454,83 @@ a.bz-card:hover { border-color: var(--muted); }
 }
 .bz-menu-toggle span { display: block; width: 18px; height: 2px; background: currentColor; }
 
-@media (max-width: 899px) {
+/* -------------------------------------------------------------- behaviours */
+/* The presentation half of the behaviour contract in renderer/client/widgets.js.
+   Selectors key off data attributes, never class names, so a dealer or the AI
+   can restyle a carousel to look like anything without breaking how it works.
+
+   Note which attributes appear here: `data-bz-carousel`, `data-bz-dropdown` and
+   `data-bz-drawer` are set by the script, not by the markup. So a panel is only
+   ever hidden once something is there to open it — with JavaScript off, a mega
+   menu renders as a plain expanded list of links, which is unstyled but
+   navigable and crawlable. Hiding it unconditionally would strand it. */
+
+[data-bz-carousel] { position: relative; }
+[data-bz-track] {
+  display: flex;
+  gap: var(--bz-slide-gap, var(--space-5));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding-bottom: var(--space-2);
+}
+[data-bz-track]::-webkit-scrollbar { height: 6px; }
+[data-bz-track]::-webkit-scrollbar-thumb { background: var(--line); border-radius: var(--radius-chip); }
+[data-bz-track] > [data-bz-part='slide'] {
+  flex: 0 0 var(--bz-slide, 320px);
+  scroll-snap-align: start;
+  min-width: 0;
+}
+[data-bz-carousel] [data-bz-part='prev'],
+[data-bz-carousel] [data-bz-part='next'] {
+  cursor: pointer;
+}
+[data-bz-carousel] [data-bz-part='prev']:disabled,
+[data-bz-carousel] [data-bz-part='next']:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+[data-bz-part='dots'] { display: flex; gap: var(--space-2); align-items: center; }
+.bz-dot {
+  width: 8px; height: 8px; padding: 0;
+  border: 0; border-radius: var(--radius-chip);
+  background: var(--line); cursor: pointer;
+}
+.bz-dot[aria-current='true'] { background: var(--accent); width: 22px; }
+
+/* Filtered-out items and inactive rotator slides. `hidden` is the mechanism in
+   both cases, so one rule covers them and nothing needs a class toggled. */
+[data-bz-part='item'][hidden],
+[data-bz-part='slide'][hidden],
+[data-bz-part='empty'][hidden] { display: none; }
+
+[data-bz-part='control'] { cursor: pointer; }
+[data-bz-part='control'][data-bz-active] { border-color: var(--accent); color: var(--accent-dark); }
+
+[data-bz-dropdown] { position: relative; }
+[data-bz-dropdown] [data-bz-part='panel'] { display: none; }
+[data-bz-dropdown] [data-bz-part='panel'][data-open] { display: block; }
+
+[data-bz-drawer] [data-bz-part='panel'] { display: none; }
+[data-bz-drawer][data-open] [data-bz-part='panel'] { display: block; }
+
+[data-bz-behavior~='scrollstate'] [data-bz-part='totop'] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+[data-bz-behavior~='scrollstate'][data-bz-scrolled] [data-bz-part='totop'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-bz-track] { scroll-behavior: auto; }
+  [data-bz-behavior~='scrollstate'] [data-bz-part='totop'] { transition: none; }
+}
+
+@media (max-width: 1100px) {
   .bz-menu-toggle { display: inline-flex; }
   .bz-menu-wrap > .bz-menu { display: none; }
   .bz-menu-wrap[data-open] > .bz-menu {

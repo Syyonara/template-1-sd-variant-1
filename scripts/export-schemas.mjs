@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import {
   RENDERER_VERSION,
   DOCUMENT_VERSION,
+  BEHAVIOURS,
   CONDITION_TYPES,
   GRID_COLUMNS,
   MENU_ITEM_TYPES,
@@ -27,6 +28,7 @@ import {
   WIDGET_GROUPS,
   STYLE_BUCKETS,
   STYLE_FIELDS,
+  STYLE_GROUPS,
   blockCatalogue,
   layoutCatalogue,
   staticWidgetIds,
@@ -69,12 +71,25 @@ const catalogue = {
   // enforces "known field" — value shape is re-checked by the renderer at
   // compile time, which drops anything invalid rather than emitting it.
   styleBuckets: STYLE_BUCKETS.map(b => b.key),
+  // The media query each bucket compiles to, so the editor's device previews
+  // resize to the same widths the published page switches at.
+  styleBreakpoints: Object.fromEntries(STYLE_BUCKETS.map(b => [b.key, b.media])),
+  styleGroups: STYLE_GROUPS,
   styleFields: Object.fromEntries(
     Object.entries(STYLE_FIELDS).map(([key, spec]) => [
       key,
-      { css: spec.css, label: spec.label, ...(spec.options ? { options: spec.options } : {}) },
+      {
+        css: spec.css,
+        label: spec.label,
+        group: spec.group ?? 'appearance',
+        ...(spec.hint ? { hint: spec.hint } : {}),
+        ...(spec.options ? { options: spec.options } : {}),
+        ...(spec.composes ? { composes: true } : {}),
+      },
     ]),
   ),
+  // Client behaviours a node may opt into via data-bz-behavior.
+  behaviours: BEHAVIOURS,
   layout,
   nesting,
   widgets: blockCatalogue(),
