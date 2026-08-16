@@ -1,7 +1,7 @@
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;font-family:var(--font-body);font-size:var(--text-body);color:var(--ink);background:var(--paper);line-height:1.6}
-h1,h2,h3,h4{font-family:var(--font-heading);line-height:1.15;margin:0 0 var(--space-4)}
+body{margin:0;font-family:var(--font-body);font-size:var(--text-body);font-weight:var(--weight-body,400);color:var(--ink);background:var(--paper);line-height:var(--leading-body,1.6)}
+h1,h2,h3,h4{font-family:var(--font-heading);font-weight:var(--weight-heading,700);line-height:var(--leading-heading,1.15);margin:0 0 var(--space-4)}
 h1{font-size:var(--text-h1)}
 h2{font-size:var(--text-h2)}
 h3{font-size:var(--text-h3)}

@@ -18,7 +18,7 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
-export const RENDERER_VERSION = '4.2.0';
+export const RENDERER_VERSION = '4.3.0';
 
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export {

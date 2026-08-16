@@ -12,8 +12,14 @@
   width: 100%;
   max-width: var(--container);
   margin-inline: auto;
-  padding-inline: var(--space-4);
+  padding-inline: var(--container-pad, var(--space-4));
   box-sizing: border-box;
+}
+@media (max-width: 1023px) {
+  .bz-container { padding-inline: var(--container-pad-tablet, var(--container-pad, var(--space-4))); }
+}
+@media (max-width: 767px) {
+  .bz-container { padding-inline: var(--container-pad-mobile, var(--container-pad, var(--space-4))); }
 }
 
 .bz-container--wide { max-width: min(1600px, 96vw); }

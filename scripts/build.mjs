@@ -180,8 +180,15 @@ function renderWithTemplate(target, nodes) {
   const resolved = resolveTemplate(target, templates);
   if (resolved.conflict) warn(resolved.conflict);
   // Instance style overrides, for the template's own nodes and the page's,
-  // compiled into one block the shell appends after the component stylesheet.
-  const styles = compileNodeStyles([...(resolved.template?.nodes ?? []), ...nodes]);
+  // compiled into one block the shell appends after the component stylesheet —
+  // plus the template's own custom CSS, which follows the template to every
+  // page that uses it.
+  const styles = [
+    compileNodeStyles([...(resolved.template?.nodes ?? []), ...nodes]),
+    resolved.template?.css || '',
+  ]
+    .filter(Boolean)
+    .join('\n');
   if (!resolved.template) {
     return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', styles, resolved };
   }
@@ -222,6 +229,21 @@ function chromeFor(target) {
   }
   return chromeCache.get(key);
 }
+
+// Site-wide custom code. Dealer-authored; runs on the published site only.
+const customCodeRaw = existsSync(join(SITE, 'custom-code.json'))
+  ? readJson(join(SITE, 'custom-code.json'))
+  : null;
+const CUSTOM = {
+  headStart: customCodeRaw?.headStart || '',
+  headEnd: customCodeRaw?.headEnd || '',
+  bodyStart: customCodeRaw?.bodyStart || '',
+  beforeFooter: customCodeRaw?.beforeFooter || '',
+  bodyEnd: customCodeRaw?.bodyEnd || '',
+  css: customCodeRaw?.css || '',
+  hasJs: !!(customCodeRaw?.js && customCodeRaw.js.trim()),
+};
+if (CUSTOM.hasJs) write('scripts/custom.js', customCodeRaw.js);
 
 const chromeCss = readText(join(SITE, 'chrome', 'chrome.css'));
 const chromeJs = readText(join(SITE, 'chrome', 'chrome.js'));
@@ -300,6 +322,7 @@ for (const p of pages) {
   write(
     p.out,
     renderShell({
+      custom: CUSTOM,
       config,
       fontsHref: FONTS_HREF,
       chrome: { header: rendered.header, footer: rendered.footer },
@@ -378,9 +401,15 @@ if (existsSync(join(BLOG, 'posts'))) {
       : ''
   }</div>`;
       const rendered = renderWithTemplate({ kind: 'post', slug: post.slug }, postNodes(post));
+      let postJs = null;
+      if (post.js && post.js.trim()) {
+        postJs = `/scripts/posts/${post.slug}.js`;
+        write(`scripts/posts/${post.slug}.js`, post.js);
+      }
       write(
         `${base.slice(1)}/${post.slug}/index.html`,
         renderShell({
+          custom: CUSTOM,
           config,
           fontsHref: FONTS_HREF,
           chrome: { header: rendered.header, footer: rendered.footer },
@@ -389,8 +418,8 @@ if (existsSync(join(BLOG, 'posts'))) {
           description: post.description || config.seo.defaultDescription,
           canonical: `${config.url}${base}/${post.slug}`,
           bodyHtml: `<article>${masthead}${rendered.body}</article>`,
-          pageCss: rendered.styles,
-          pageJs: null,
+          pageCss: [rendered.styles, post.css || ''].filter(Boolean).join('\n'),
+          pageJs: postJs,
           ogImage: post.coverImage,
           noindex: false,
         }),
@@ -401,6 +430,7 @@ if (existsSync(join(BLOG, 'posts'))) {
     write(
       `${base.slice(1)}/index.html`,
       renderShell({
+        custom: CUSTOM,
         config,
         fontsHref: FONTS_HREF,
         chrome: indexChrome,

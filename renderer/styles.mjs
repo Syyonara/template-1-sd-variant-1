@@ -29,9 +29,15 @@ const color = value => {
 };
 
 /** Length in pixels, bounded so a typo cannot push a page into absurdity. */
-const px = (max = 400) => value => {
+const px = (max = 400, min = 0) => value => {
   const n = Number(value);
-  return Number.isFinite(n) && n >= 0 && n <= max ? `${Math.round(n)}px` : null;
+  return Number.isFinite(n) && n >= min && n <= max ? `${Math.round(n)}px` : null;
+};
+
+/** A bare number within bounds — line-height, opacity fractions. */
+const num = (min, max, transform = v => String(v)) => value => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max ? transform(n) : null;
 };
 
 const oneOf = options => value => (options.includes(value) ? String(value) : null);
@@ -62,6 +68,25 @@ export const STYLE_FIELDS = {
     label: 'Shadow',
     options: Object.keys(SHADOWS),
   },
+  fontSize: { css: 'font-size', accepts: px(160, 8), label: 'Font size' },
+  fontWeight: {
+    css: 'font-weight',
+    accepts: oneOf(['400', '500', '600', '700', '800']),
+    label: 'Font weight',
+    options: ['400', '500', '600', '700', '800'],
+  },
+  lineHeight: { css: 'line-height', accepts: num(0.8, 3), label: 'Line height' },
+  letterSpacing: { css: 'letter-spacing', accepts: px(20, -3), label: 'Letter spacing' },
+  opacity: { css: 'opacity', accepts: num(0, 100, n => String(Math.round(n) / 100)), label: 'Opacity (%)' },
+  borderWidth: { css: 'border-width', accepts: px(12), label: 'Border width' },
+  borderColor: { css: 'border-color', accepts: color, label: 'Border colour' },
+  /**
+   * Responsive visibility. `true` compiles to display:none in that bucket —
+   * the mechanism behind "hide this on mobile", and the reason a device-
+   * specific ask never has to become a structural change that hits every
+   * device.
+   */
+  hide: { css: 'display', accepts: value => (value === true || value === 'true' ? 'none' : null), label: 'Hide' },
 };
 
 /**
@@ -118,6 +143,9 @@ function declarationsFor(values) {
     const compiled = spec.accepts(value);
     if (compiled !== null) lines.push(`${spec.css}:${compiled}`);
   }
+  // A border width without a style renders nothing: the element default is
+  // border-style none. Setting the width implies a visible border.
+  if (lines.some(l => l.startsWith('border-width:'))) lines.push('border-style:solid');
   return lines;
 }
 

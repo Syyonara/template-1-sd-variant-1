@@ -38,11 +38,17 @@ export const CONDITION_TYPES = [
     specificity: 100,
   },
   { id: 'allPages', label: 'All pages', description: 'Every page.', ref: null, specificity: 200 },
-  { id: 'allPosts', label: 'All posts', description: 'Every blog post.', ref: null, specificity: 200 },
+  {
+    id: 'allPosts',
+    label: 'All posts',
+    description: 'Each individual blog post page — not the list of posts.',
+    ref: null,
+    specificity: 200,
+  },
   {
     id: 'blog',
     label: 'Blog index',
-    description: 'The page that lists your posts.',
+    description: 'Only the page that lists your posts (/blog) — individual posts are "All posts".',
     ref: null,
     specificity: 300,
   },
@@ -130,6 +136,8 @@ export function parseTemplate(raw, fallbackId) {
     name: String(raw.name || id),
     conditions: normaliseConditions(raw.conditions),
     nodes: document.nodes,
+    // The template's own custom CSS, carried to every page that uses it.
+    css: typeof raw.css === 'string' ? raw.css : '',
     legacySlot,
   };
 }
@@ -210,7 +218,12 @@ export function resolveTemplate(target, templates) {
   }
   if (!matches.length) return { template: null, condition: null, label: 'no template', conflict: null };
 
-  matches.sort((a, b) => b.weight - a.weight);
+  // Specific beats broad (page > group > blog/inventory > all pages/posts >
+  // entire site) — the hierarchy every theme builder trains people on. Equal
+  // specificity is a real conflict two templates cannot both win; the tie is
+  // broken deterministically by template id so a rebuild never flips the site,
+  // and reported so the Templates screen can show it instead of hiding it.
+  matches.sort((a, b) => b.weight - a.weight || a.template.id.localeCompare(b.template.id));
   const top = matches[0];
   const tied = matches.filter(m => m.weight === top.weight && m.template.id !== top.template.id);
 

@@ -68,6 +68,17 @@ export function renderShell({
   tokenScopes = [],
   extraHead = '',
   storefrontPrefix = 'store',
+  /**
+   * Site-wide custom code, from `site/custom-code.json`. Dealer-authored, same
+   * trust level as the repo itself; it runs on the dealer's published site and
+   * nowhere else. Slots mirror where people are used to pasting snippets:
+   * headStart (verification metas), headEnd (styles/pixels that must win),
+   * bodyStart (tag-manager noscript), beforeFooter, bodyEnd (chat widgets).
+   * `css` is emitted before the page's own CSS so an entity override still
+   * beats the global layer; `hasJs` loads /scripts/custom.js, which the build
+   * writes from the same file.
+   */
+  custom = {},
 }) {
   const lang = (config.seo.locale || 'en_US').split('_')[0];
   const fullTitle =
@@ -84,7 +95,7 @@ export function renderShell({
 <html lang="${lang}">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />${custom.headStart ? `\n${custom.headStart}` : ''}
 <title>${fullTitle}</title>
 <meta name="description" content="${description}" />
 <link rel="canonical" href="${canonical}" />${noindex ? '\n<meta name="robots" content="noindex,nofollow" />' : ''}
@@ -103,17 +114,17 @@ export function renderShell({
 <link rel="stylesheet" href="/styles/reset.css" />
 <link rel="stylesheet" href="/styles/blocks.css" />
 <link rel="stylesheet" href="/styles/chrome.css" />
-<style>${pageCss}</style>
-<script type="application/ld+json">${businessJsonLd(config)}</script>${analyticsTag(config)}${extraHead}
+${custom.css ? `<style data-bz-custom>${custom.css}</style>\n` : ''}<style>${pageCss}</style>
+<script type="application/ld+json">${businessJsonLd(config)}</script>${analyticsTag(config)}${extraHead}${custom.headEnd ? `\n${custom.headEnd}` : ''}
 </head>
-<body data-bz-prefix="${esc(storefrontPrefix)}">
+<body data-bz-prefix="${esc(storefrontPrefix)}">${custom.bodyStart ? `\n${custom.bodyStart}` : ''}
 ${chrome.header || ''}
 <main>
 ${bodyHtml}
-</main>
+</main>${custom.beforeFooter ? `\n${custom.beforeFooter}` : ''}
 ${chrome.footer || ''}
 <script src="/scripts/chrome.js" defer></script>
-<script src="/scripts/widgets.js" defer></script>${pageJs ? `\n<script src="${esc(pageJs)}" defer></script>` : ''}
+<script src="/scripts/widgets.js" defer></script>${custom.hasJs ? `\n<script src="/scripts/custom.js" defer></script>` : ''}${pageJs ? `\n<script src="${esc(pageJs)}" defer></script>` : ''}${custom.bodyEnd ? `\n${custom.bodyEnd}` : ''}
 </body>
 </html>
 `;

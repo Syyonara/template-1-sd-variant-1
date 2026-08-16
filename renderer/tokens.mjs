@@ -30,9 +30,17 @@ export const DEFAULT_TOKENS = {
   },
   status: { ok: '#3a6b4a', info: '#3a5ea8', warn: '#b5761f', bad: '#b03a32' },
   type: { h1: 48, h2: 34, h3: 24, body: 16, small: 14, eyebrow: 12 },
+  typography: {
+    headingWeight: 700,
+    bodyWeight: 400,
+    headingLineHeight: 1.15,
+    bodyLineHeight: 1.6,
+  },
   spacing: { 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32, 7: 48 },
   radius: { nav: 6, input: 8, card: 10, modal: 14, chip: 999 },
-  layout: { container: '1160px' },
+  // Container paddings default to the current behaviour (space-4 at every
+  // width) so adding these tokens restyles nothing until a dealer changes them.
+  layout: { container: '1160px', padDesktop: 16, padTablet: 16, padMobile: 16 },
 };
 
 /**
@@ -47,7 +55,7 @@ export function withDefaults(tokens) {
   const base = DEFAULT_TOKENS;
   if (!tokens || typeof tokens !== 'object') return { ...base };
   const merged = { ...base, ...tokens };
-  for (const group of ['fonts', 'colors', 'status', 'type', 'spacing', 'radius', 'layout']) {
+  for (const group of ['fonts', 'colors', 'status', 'type', 'typography', 'spacing', 'radius', 'layout']) {
     merged[group] = { ...base[group], ...(tokens[group] || {}) };
   }
   return merged;
@@ -61,10 +69,11 @@ export const TOKEN_GROUPS = {
   colors: ['accent', 'accentDark', 'ink', 'inkDark', 'muted', 'line', 'card', 'paper'],
   status: ['ok', 'info', 'warn', 'bad'],
   type: ['h1', 'h2', 'h3', 'body', 'small', 'eyebrow'],
+  typography: ['headingWeight', 'bodyWeight', 'headingLineHeight', 'bodyLineHeight'],
   spacing: ['1', '2', '3', '4', '5', '6', '7'],
   radius: ['nav', 'input', 'card', 'modal', 'chip'],
   fonts: ['heading', 'body'],
-  layout: ['container'],
+  layout: ['container', 'padDesktop', 'padTablet', 'padMobile'],
 };
 
 /** The CSS custom property each token key maps to, and how its value is formatted. */
@@ -93,6 +102,12 @@ const DECLARATIONS = {
     small: ['--text-small', rem],
     eyebrow: ['--text-eyebrow', rem],
   },
+  typography: {
+    headingWeight: ['--weight-heading', String],
+    bodyWeight: ['--weight-body', String],
+    headingLineHeight: ['--leading-heading', String],
+    bodyLineHeight: ['--leading-body', String],
+  },
   spacing: {
     1: ['--space-1', px],
     2: ['--space-2', px],
@@ -109,7 +124,12 @@ const DECLARATIONS = {
     modal: ['--radius-modal', px],
     chip: ['--radius-chip', px],
   },
-  layout: { container: ['--container', String] },
+  layout: {
+    container: ['--container', String],
+    padDesktop: ['--container-pad', px],
+    padTablet: ['--container-pad-tablet', px],
+    padMobile: ['--container-pad-mobile', px],
+  },
 };
 
 /**
@@ -145,6 +165,10 @@ export function compileTokens(input) {
   --text-h1:${rem(ty.h1)}; --text-h2:${rem(ty.h2)}; --text-h3:${rem(ty.h3)};
   --text-body:${rem(ty.body)}; --text-small:${rem(ty.small)}; --text-eyebrow:${rem(ty.eyebrow)};
 
+  /* Typography — editable */
+  --weight-heading:${t.typography.headingWeight}; --weight-body:${t.typography.bodyWeight};
+  --leading-heading:${t.typography.headingLineHeight}; --leading-body:${t.typography.bodyLineHeight};
+
   /* Spacing scale — editable */
   --space-1:${px(sp['1'])}; --space-2:${px(sp['2'])}; --space-3:${px(sp['3'])};
   --space-4:${px(sp['4'])}; --space-5:${px(sp['5'])}; --space-6:${px(sp['6'])}; --space-7:${px(sp['7'])};
@@ -155,6 +179,8 @@ export function compileTokens(input) {
 
   /* Layout — editable */
   --container:${t.layout.container};
+  --container-pad:${px(t.layout.padDesktop)}; --container-pad-tablet:${px(t.layout.padTablet)};
+  --container-pad-mobile:${px(t.layout.padMobile)};
 
   /* ---- Fixed extension layer (not dealer-editable) ---- */
   --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e2e8f0; --gray-300:#cbd5e1; --gray-400:#94a3b8;
