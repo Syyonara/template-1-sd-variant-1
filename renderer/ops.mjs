@@ -134,7 +134,16 @@ export function applyOps(raw, ops, options = {}) {
   const rejected = [];
   const reject = (op, reason) => rejected.push({ op, reason });
 
-  const scope = options.scopeId && locateNode(document.nodes, options.scopeId) ? options.scopeId : null;
+  // Fail closed: a scope id that is not in the document means the caller's
+  // selection went stale, and a batch built against a stale view must not apply
+  // at all — with no boundary, every destructive op would sail through.
+  if (options.scopeId && !locateNode(document.nodes, options.scopeId)) {
+    for (const op of ops || []) {
+      reject(op, `the selection "${options.scopeId}" is not in this document — reselect and try again`);
+    }
+    return { document, applied, rejected };
+  }
+  const scope = options.scopeId ?? null;
   const addedIds = new Set();
   const withinScope = id => {
     if (!scope) return true;
@@ -244,7 +253,20 @@ export function applyOps(raw, ops, options = {}) {
           reject(op, `node "${op.id}" not found`);
           break;
         }
-        hit.node.props = mergeProps(hit.node.props, op.props ?? op.patch);
+        if (op.props || op.patch) {
+          hit.node.props = mergeProps(hit.node.props, op.props ?? op.patch);
+        }
+        // Style overrides patch per breakpoint bucket: setting mobile.textAlign
+        // leaves base.background alone, and null clears one field.
+        if (isObject(op.styles)) {
+          const merged = { ...(hit.node.styles || {}) };
+          for (const [bucket, values] of Object.entries(op.styles)) {
+            merged[bucket] = mergeProps(merged[bucket], values);
+            if (!Object.keys(merged[bucket]).length) delete merged[bucket];
+          }
+          if (Object.keys(merged).length) hit.node.styles = merged;
+          else delete hit.node.styles;
+        }
         applied.push(op);
         break;
       }

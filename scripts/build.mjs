@@ -33,6 +33,7 @@ import {
   renderShell,
   resolveTemplate,
   splitAtContentArea,
+  compileNodeStyles,
 } from '../renderer/index.mjs';
 
 const ROOT = process.cwd();
@@ -178,19 +179,23 @@ const templates = parseTemplates(
 function renderWithTemplate(target, nodes) {
   const resolved = resolveTemplate(target, templates);
   if (resolved.conflict) warn(resolved.conflict);
+  // Instance style overrides, for the template's own nodes and the page's,
+  // compiled into one block the shell appends after the component stylesheet.
+  const styles = compileNodeStyles([...(resolved.template?.nodes ?? []), ...nodes]);
   if (!resolved.template) {
-    return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', resolved };
+    return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', styles, resolved };
   }
 
   const { before, after, found } = splitAtContentArea(resolved.template.nodes);
   if (!found) {
     const composed = composeDocument(resolved.template.nodes, nodes, { warn });
-    return { header: '', body: renderDocument({ nodes: composed }, renderCtx), footer: '', resolved };
+    return { header: '', body: renderDocument({ nodes: composed }, renderCtx), footer: '', styles, resolved };
   }
   return {
     header: renderDocument({ nodes: before }, renderCtx),
     body: renderDocument({ nodes }, renderCtx),
     footer: renderDocument({ nodes: after }, renderCtx),
+    styles,
     resolved,
   };
 }
@@ -303,7 +308,7 @@ for (const p of pages) {
       description: p.description || config.seo.defaultDescription,
       canonical: config.url + p.path,
       bodyHtml: rendered.body,
-      pageCss: css,
+      pageCss: [css, rendered.styles].filter(Boolean).join('\n'),
       pageJs,
       ogImage: p.seo && p.seo.ogImage,
       noindex,
@@ -384,7 +389,7 @@ if (existsSync(join(BLOG, 'posts'))) {
           description: post.description || config.seo.defaultDescription,
           canonical: `${config.url}${base}/${post.slug}`,
           bodyHtml: `<article>${masthead}${rendered.body}</article>`,
-          pageCss: '',
+          pageCss: rendered.styles,
           pageJs: null,
           ogImage: post.coverImage,
           noindex: false,

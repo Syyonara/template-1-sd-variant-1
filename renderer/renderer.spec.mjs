@@ -7,6 +7,7 @@ import {
   blockCatalogue,
   blockRegistry,
   clearCustomWidgets,
+  compileNodeStyles,
   compileTokens,
   compileTokenScope,
   composeDocument,
@@ -27,6 +28,7 @@ import {
   renderMenu,
   resolveTemplate,
   splitAtContentArea,
+  unknownStyleKeys,
   validateDocument,
   validateTemplate,
 } from './index.mjs';
@@ -309,6 +311,17 @@ test('scope: insert lands beside the selection but never further out', () => {
   assert.equal(farOut.rejected.length, 1);
 });
 
+test('scope: a stale selection rejects the whole batch instead of disabling the boundary', () => {
+  const before = JSON.stringify(scopedDoc().nodes);
+  const { document, rejected } = applyOps(scopedDoc(), [
+    { op: 'update', id: 'c1', props: { span: 4 } },
+    { op: 'remove', id: 'c2' },
+  ], { scopeId: 'gone-node' });
+  assert.equal(rejected.length, 2);
+  assert.ok(rejected.every((r) => /is not in this document/.test(r.reason)));
+  assert.equal(JSON.stringify(document.nodes), before);
+});
+
 test('scope: a node inserted in this batch is editable in the same batch', () => {
   const { document, rejected } = applyOps(scopedDoc(), [
     { op: 'insert', parentId: 'c1', node: { id: 'h2', type: 'heading', props: { text: 'a' } } },
@@ -317,6 +330,68 @@ test('scope: a node inserted in this batch is editable in the same batch', () =>
   assert.deepEqual(rejected, []);
   const inserted = document.nodes[0].children[0].children[0].children.find((n) => n.id === 'h2');
   assert.equal(inserted.props.text, 'b');
+});
+
+/* ----------------------------------------------------------------- styles */
+
+test('node styles compile to id-keyed rules with desktop-first media buckets', () => {
+  const css = compileNodeStyles([
+    {
+      id: 's1',
+      type: 'section',
+      props: {},
+      styles: {
+        base: { background: '#102030', paddingTop: 64 },
+        mobile: { paddingTop: 24, textAlign: 'center' },
+      },
+      children: [
+        { id: 'h1', type: 'heading', props: {}, styles: { base: { textColor: 'accent' } } },
+      ],
+    },
+  ]);
+  assert.match(css, /\[data-bz-node="s1"\]\[data-bz-node\]\{background:#102030;padding-top:64px\}/);
+  assert.match(css, /@media \(max-width: 767px\)\{\[data-bz-node="s1"\]\[data-bz-node\]\{padding-top:24px;text-align:center\}\}/);
+  assert.match(css, /\[data-bz-node="h1"\]\[data-bz-node\]\{color:var\(--accent\)\}/);
+});
+
+test('style values outside the whitelist are dropped, never emitted', () => {
+  const css = compileNodeStyles([
+    {
+      id: 'x',
+      type: 'text',
+      props: {},
+      styles: {
+        base: {
+          background: 'url(javascript:alert(1))',
+          textAlign: 'justify',
+          paddingTop: 99999,
+          position: 'fixed',
+        },
+      },
+    },
+  ]);
+  assert.equal(css, '');
+  assert.deepEqual(unknownStyleKeys({ base: { position: 'fixed' }, desktop: {} }), ['base.position', 'desktop']);
+});
+
+test('styles survive parseDocument, and update ops patch them per bucket', () => {
+  const doc = parseDocument({
+    version: 2,
+    nodes: [{ id: 'a', type: 'heading', props: { text: 'x' }, styles: { base: { textAlign: 'center' } } }],
+  });
+  assert.deepEqual(doc.nodes[0].styles, { base: { textAlign: 'center' } });
+
+  const { document, rejected } = applyOps(doc, [
+    { op: 'update', id: 'a', styles: { base: { background: '#ffffff' }, mobile: { textAlign: 'left' } } },
+  ]);
+  assert.deepEqual(rejected, []);
+  assert.deepEqual(document.nodes[0].styles, {
+    base: { textAlign: 'center', background: '#ffffff' },
+    mobile: { textAlign: 'left' },
+  });
+
+  const cleared = applyOps(document, [{ op: 'update', id: 'a', styles: { base: { textAlign: null, background: null }, mobile: { textAlign: null } } }]);
+  assert.equal(cleared.document.nodes[0].styles, undefined);
 });
 
 /* -------------------------------------------------------------- templates */

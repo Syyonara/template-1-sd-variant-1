@@ -318,6 +318,9 @@ function migrateNode(raw) {
   if (!isObject(raw) || !raw.type) return null;
   const props = isObject(raw.props) ? raw.props : {};
   const columns = Array.isArray(props.columns) ? props.columns : null;
+  // Instance style overrides ride along untouched; every branch below rebuilds
+  // the node, and a rebuild that forgets this key silently unstyles the page.
+  const styles = isObject(raw.styles) ? { styles: raw.styles } : {};
 
   // The v1 check runs first, and has to: `row` is a layout type in both models,
   // so recognising it as one before looking at `props.columns` would take the
@@ -327,6 +330,7 @@ function migrateNode(raw) {
     return {
       id: raw.id,
       type: 'row',
+      ...styles,
       props: {
         gap: 6,
         align: props.align === 'center' ? 'center' : 'stretch',
@@ -345,6 +349,7 @@ function migrateNode(raw) {
       id: raw.id,
       type: raw.type,
       props: stripColumns(props),
+      ...styles,
       ...(isContainer(raw.type) || Array.isArray(raw.children)
         ? { children: migrateList(raw.children) }
         : {}),
@@ -356,11 +361,11 @@ function migrateNode(raw) {
   // beside the widget rather than silently dropped.
   if (columns) {
     const lifted = migrateList(columns.flat());
-    const node = { id: raw.id, type: raw.type, props: stripColumns(props) };
+    const node = { id: raw.id, type: raw.type, props: stripColumns(props), ...styles };
     return lifted.length ? { ...node, __lifted: lifted } : node;
   }
 
-  return { id: raw.id, type: raw.type, props };
+  return { id: raw.id, type: raw.type, props, ...styles };
 }
 
 function stripColumns(props) {

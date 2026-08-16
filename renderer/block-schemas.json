@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "4.0.0",
+  "rendererVersion": "4.2.0",
   "documentVersion": 2,
   "gridColumns": 12,
   "tokenGroups": {
@@ -284,6 +284,71 @@
     "color",
     "list"
   ],
+  "styleBuckets": [
+    "base",
+    "tablet",
+    "mobile"
+  ],
+  "styleFields": {
+    "background": {
+      "css": "background",
+      "label": "Background"
+    },
+    "textColor": {
+      "css": "color",
+      "label": "Text colour"
+    },
+    "paddingTop": {
+      "css": "padding-top",
+      "label": "Padding top"
+    },
+    "paddingRight": {
+      "css": "padding-right",
+      "label": "Padding right"
+    },
+    "paddingBottom": {
+      "css": "padding-bottom",
+      "label": "Padding bottom"
+    },
+    "paddingLeft": {
+      "css": "padding-left",
+      "label": "Padding left"
+    },
+    "marginTop": {
+      "css": "margin-top",
+      "label": "Margin top"
+    },
+    "marginBottom": {
+      "css": "margin-bottom",
+      "label": "Margin bottom"
+    },
+    "textAlign": {
+      "css": "text-align",
+      "label": "Text align"
+    },
+    "maxWidth": {
+      "css": "max-width",
+      "label": "Max width"
+    },
+    "radius": {
+      "css": "border-radius",
+      "label": "Corner radius"
+    },
+    "gap": {
+      "css": "gap",
+      "label": "Gap"
+    },
+    "shadow": {
+      "css": "box-shadow",
+      "label": "Shadow",
+      "options": [
+        "none",
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
   "layout": [
     {
       "id": "section",

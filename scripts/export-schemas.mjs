@@ -25,6 +25,8 @@ import {
   TOKEN_GROUPS,
   DEFAULT_TOKENS,
   WIDGET_GROUPS,
+  STYLE_BUCKETS,
+  STYLE_FIELDS,
   blockCatalogue,
   layoutCatalogue,
   staticWidgetIds,
@@ -62,6 +64,17 @@ const catalogue = {
   staticWidgets: staticWidgetIds(),
   // Prop editor types a custom widget definition may declare.
   customWidgetPropTypes: PROP_TYPES,
+  // Instance style overrides: the fields a node's `styles` buckets may set.
+  // Functions cannot travel as JSON, so the validator gets names + options and
+  // enforces "known field" — value shape is re-checked by the renderer at
+  // compile time, which drops anything invalid rather than emitting it.
+  styleBuckets: STYLE_BUCKETS.map(b => b.key),
+  styleFields: Object.fromEntries(
+    Object.entries(STYLE_FIELDS).map(([key, spec]) => [
+      key,
+      { css: spec.css, label: spec.label, ...(spec.options ? { options: spec.options } : {}) },
+    ]),
+  ),
   layout,
   nesting,
   widgets: blockCatalogue(),
