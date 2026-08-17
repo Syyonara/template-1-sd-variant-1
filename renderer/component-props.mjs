@@ -112,14 +112,23 @@ export function componentSampleValues(props, rows = 3) {
   return out;
 }
 
-const SAMPLE_IMAGE =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80">' +
-      '<rect width="160" height="80" fill="%23e9ecf2"/>' +
-      '<text x="80" y="45" font-family="sans-serif" font-size="11" fill="%236b7280" text-anchor="middle">logo</text>' +
-      '</svg>',
-  );
+const SAMPLE_FILLS = ['#e9ecf2', '#dde7f7', '#e7ddd4', '#dceee4'];
+
+function sampleImage(label, index) {
+  const caption = `${String(label || 'logo').slice(0, 10)} ${index + 1}`;
+  const fill = SAMPLE_FILLS[index % SAMPLE_FILLS.length];
+  return {
+    src:
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80">` +
+          `<rect width="160" height="80" fill="${fill}"/>` +
+          `<text x="80" y="45" font-family="sans-serif" font-size="12" fill="#4b5563" text-anchor="middle">${caption}</text>` +
+          `</svg>`,
+      ),
+    alt: caption,
+  };
+}
 
 function sample(type, label, index) {
   switch (type) {
@@ -128,7 +137,7 @@ function sample(type, label, index) {
     case 'number':
       return index + 1;
     case 'image':
-      return { src: SAMPLE_IMAGE, alt: `${label} ${index + 1}` };
+      return sampleImage(label, index);
     case 'url':
       return '#';
     case 'color':

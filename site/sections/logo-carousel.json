@@ -17,8 +17,7 @@
       "label": "Logos",
       "fields": [
         { "key": "image", "type": "image", "label": "Logo" },
-        { "key": "name", "type": "text", "label": "Brand name" },
-        { "key": "link", "type": "url", "label": "Links to" }
+        { "key": "url", "type": "url", "label": "Links to" }
       ]
     }
   ],
@@ -53,7 +52,7 @@
                 {
                   "id": "logos-image",
                   "type": "image",
-                  "props": { "image": "{{image}}", "alt": "{{name}}", "link": "{{link}}" }
+                  "props": { "image": "{{image}}", "url": "{{url}}" }
                 }
               ]
             }

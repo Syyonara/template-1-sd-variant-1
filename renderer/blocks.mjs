@@ -249,13 +249,20 @@ const BLOCKS = {
         image: IMAGE_SCHEMA,
         caption: str('Optional caption shown under the image.'),
         width: str('How wide the image sits.', { enum: ['prose', 'full'], default: 'full' }),
+        url: str('Optional: where clicking the image goes.'),
       },
       required: ['image'],
     },
-    render(props) {
-      const fig = `<figure class="${cls('bz-figure', props.width === 'prose' && 'bz-prose')}">${image(
-        props.image,
-      )}${props.caption ? `<figcaption>${esc(props.caption)}</figcaption>` : ''}</figure>`;
+    // A linked image is what a logo rail is made of, and a designed component has
+    // only this block to build one from — without a url each logo was a dead end,
+    // and the alternative was hand-written markup in a coded widget.
+    render(props, ctx) {
+      const picture = image(props.image);
+      const fig = `<figure class="${cls('bz-figure', props.width === 'prose' && 'bz-prose')}">${
+        props.url
+          ? `<a href="${esc(href(props.url, ctx))}"${attrs(tagAttrs('link', 'image'))}>${picture}</a>`
+          : picture
+      }${props.caption ? `<figcaption>${esc(props.caption)}</figcaption>` : ''}</figure>`;
       return container(fig);
     },
   },

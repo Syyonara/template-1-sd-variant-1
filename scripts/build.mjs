@@ -35,7 +35,8 @@ import {
   renderShell,
   resolveTemplate,
   splitAtContentArea,
-  compileNodeStyles,
+  componentCode,
+  documentStyles,
 } from '../renderer/index.mjs';
 
 const ROOT = process.cwd();
@@ -125,44 +126,25 @@ const sections = loadById(join(SITE, 'sections'));
  *
  * A component's own stylesheet and script travel with it rather than loading on
  * every page: a dealer with a dozen components should not ship all twelve to a
- * page that uses one. Following nesting matters because a component may place
- * another, and the inner one's styles are just as necessary.
+ * page that uses one.
  *
- * Emitting the script file is done here, on first use, so a component nobody
- * places produces no output at all.
+ * Which components a tree places is decided by the renderer, so the dashboard's
+ * preview reaches the same answer. Turning a script into a file is this build's
+ * business and stays here — done on first use, so a component nobody places
+ * produces no output at all.
  */
 const componentScriptsWritten = new Set();
 function componentAssets(nodeLists) {
-  const seen = new Set();
-  const css = [];
+  const collected = componentCode(nodeLists, renderCtx);
   const scripts = [];
-
-  const walk = nodes => {
-    for (const node of Array.isArray(nodes) ? nodes : []) {
-      if (!node || typeof node !== 'object') continue;
-      if (node.type === 'sharedSection') {
-        const id = String(node.props?.sectionId || '').trim();
-        const section = id ? sections[id] : null;
-        if (section && !seen.has(id)) {
-          seen.add(id);
-          if (section.css) css.push(section.css);
-          if (section.js && String(section.js).trim()) {
-            const url = `/scripts/components/${id}.js`;
-            if (!componentScriptsWritten.has(id)) {
-              componentScriptsWritten.add(id);
-              write(`scripts/components/${id}.js`, section.js);
-            }
-            scripts.push(url);
-          }
-          walk(parseDocument(section).nodes);
-        }
-      }
-      walk(node.children);
+  for (const script of collected.scripts) {
+    if (!componentScriptsWritten.has(script.id)) {
+      componentScriptsWritten.add(script.id);
+      write(`scripts/components/${script.id}.js`, script.js);
     }
-  };
-
-  for (const list of nodeLists) walk(list);
-  return { css: css.join('\n'), scripts };
+    scripts.push(`/scripts/components/${script.id}.js`);
+  }
+  return { css: collected.css, scripts };
 }
 
 /* ------------------------------------------------------------------- tokens */
@@ -256,9 +238,13 @@ function renderWithTemplate(target, nodes) {
   // compiled into one block the shell appends after the component stylesheet —
   // plus the template's own custom CSS, which follows the template to every
   // page that uses it.
+  //
+  // documentStyles rather than compileNodeStyles because a designed component is
+  // one reference node here: its own nodes, and the suffixed ids its repeats
+  // produce, exist only after expansion.
   const assets = componentAssets([resolved.template?.nodes ?? [], nodes]);
   const styles = [
-    compileNodeStyles([...(resolved.template?.nodes ?? []), ...nodes]),
+    documentStyles([resolved.template?.nodes ?? [], nodes], renderCtx),
     resolved.template?.css || '',
     assets.css,
   ]

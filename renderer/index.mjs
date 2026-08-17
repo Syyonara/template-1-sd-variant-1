@@ -18,6 +18,11 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
+// 4.7.0 — `documentStyles` compiles instance style overrides for a document and
+// for every designed component it places. `compileNodeStyles` sees only the nodes
+// it is given, and a page holds a component as one reference node, so anything
+// styled inside a component rendered unstyled on every page that placed it.
+//
 // 4.6.0 — designed components take placeholders. A component declares `props`,
 // its nodes bind to them with `{{key}}`, a node can `repeat` over a list prop, and
 // a `sharedSection` placing it supplies `values`. Until now a reusable component
@@ -29,7 +34,7 @@
 // person or a model hand-writes. `anchor` and `scope` join them as declared
 // universal props: the renderer always read those off any node's wrapper while no
 // widget declared them, so the validator refused edits the build would render.
-export const RENDERER_VERSION = '4.6.0';
+export const RENDERER_VERSION = '4.7.0';
 
 export {
   BEHAVIOURS,
@@ -49,6 +54,7 @@ export {
   previewProps,
 } from './component-props.mjs';
 
+export { componentCode, documentStyles } from './document-assets.mjs';
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export {
   STYLE_FIELDS,

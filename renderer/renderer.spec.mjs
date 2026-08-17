@@ -16,8 +16,10 @@ import {
   compileNodeStyles,
   compileTokens,
   compileTokenScope,
+  componentCode,
   composeDocument,
   conditionMatches,
+  documentStyles,
   customWidgetCss,
   customWidgets,
   ensureIds,
@@ -1072,6 +1074,13 @@ test('a preview inside a repeat resolves the item, not the outer scope', () => {
   assert.equal(shown.alt, item.name);
 });
 
+test('sample logos are distinct, so a carousel preview is not three copies of one box', () => {
+  const values = componentSampleValues(parseComponentProps(LOGOS.props));
+  const srcs = values.logos.map((row) => row.image.src);
+  assert.equal(new Set(srcs).size, srcs.length);
+  assert.match(values.logos[0].image.src, /^data:image\/svg\+xml,/);
+});
+
 test('a preview drops repeat, which is an instruction rather than a prop', () => {
   const shown = previewProps({ repeat: 'logos', span: 3 }, { logos: [] });
   assert.equal('repeat' in shown, false);
@@ -1081,6 +1090,162 @@ test('a preview drops repeat, which is an instruction rather than a prop', () =>
 test('a preview leaves a binding nothing declares empty rather than literal', () => {
   const shown = previewProps({ text: '{{nobodyDeclaredThis}}' }, {});
   assert.equal(shown.text, '');
+});
+
+test('an image with a url is clickable, and one without gains no anchor', () => {
+  const linked = renderDocument(
+    { nodes: [{ id: 'logo', type: 'image', props: { image: { src: '/kw.png', alt: 'KW' }, url: '/store' } }] },
+    CTX,
+  );
+  assert.match(linked, /<a href="\/store"[^>]*><img/);
+  assert.match(linked, /data-bz-el="link"/, 'analytics has to see the click');
+
+  const plain = renderDocument(
+    { nodes: [{ id: 'logo', type: 'image', props: { image: { src: '/kw.png', alt: 'KW' } } }] },
+    CTX,
+  );
+  assert.doesNotMatch(plain, /<a /);
+});
+
+/* ------------------------------------------------------- document styles */
+
+/**
+ * Styling inside a designed component used to be lost on publish.
+ *
+ * A page holds a component as one `sharedSection` reference, so compiling the
+ * page's own tree emitted nothing for the component's nodes — they exist only
+ * after expansion. Everything spaced or coloured in the component editor looked
+ * right there and rendered unstyled on every page that placed it.
+ */
+const STYLED = {
+  id: 'styled',
+  name: 'Styled component',
+  props: [{ key: 'logos', type: 'list', label: 'Logos', fields: [{ key: 'name', type: 'text', label: 'Name' }] }],
+  nodes: [
+    {
+      id: 'band',
+      type: 'section',
+      styles: { base: { background: '#111' }, mobile: { paddingTop: 8 } },
+      children: [
+        {
+          id: 'slide',
+          type: 'column',
+          props: { span: 3, repeat: 'logos' },
+          styles: { base: { textAlign: 'center' } },
+          children: [{ id: 'name', type: 'heading', props: { text: '{{name}}' } }],
+        },
+      ],
+    },
+  ],
+};
+
+const STYLED_CTX = { ...CTX, sections: { styled: STYLED, logos: LOGOS } };
+
+test("a component's own overrides reach the page that places it", () => {
+  const page = [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'styled', values: { logos: [] } } }];
+  const css = documentStyles([page], STYLED_CTX);
+  assert.match(css, /\[data-bz-node="band"\]\[data-bz-node\]\{background:#111\}/);
+  assert.match(css, /@media[^{]+\{\[data-bz-node="band"\]/, 'a breakpoint bucket survives the expansion');
+});
+
+test('every copy of a repeating node is styled, not just the first', () => {
+  const page = [
+    {
+      id: 'ref',
+      type: 'sharedSection',
+      props: { sectionId: 'styled', values: { logos: [{ name: 'A' }, { name: 'B' }] } },
+    },
+  ];
+  const css = documentStyles([page], STYLED_CTX);
+  // Expansion suffixes ids, and the selector is an exact match — compiling the
+  // unexpanded tree would name "slide", which is not in the rendered output.
+  assert.match(css, /data-bz-node="slide-1"/);
+  assert.match(css, /data-bz-node="slide-2"/);
+  assert.doesNotMatch(css, /data-bz-node="slide"\]/);
+});
+
+test('two placements with different content are both styled', () => {
+  const page = [
+    { id: 'one', type: 'sharedSection', props: { sectionId: 'styled', values: { logos: [{ name: 'A' }] } } },
+    {
+      id: 'two',
+      type: 'sharedSection',
+      props: { sectionId: 'styled', values: { logos: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] } },
+    },
+  ];
+  const css = documentStyles([page], STYLED_CTX);
+  assert.match(css, /data-bz-node="slide-3"/, "the longer placement's third slide needs styling too");
+});
+
+test('the page and its template are compiled together', () => {
+  const css = documentStyles(
+    [
+      [{ id: 'head', type: 'section', styles: { base: { paddingTop: 4 } } }],
+      [{ id: 'body', type: 'section', styles: { base: { paddingTop: 8 } } }],
+    ],
+    STYLED_CTX,
+  );
+  assert.match(css, /data-bz-node="head"/);
+  assert.match(css, /data-bz-node="body"/);
+});
+
+test('a component that places itself is cut rather than followed forever', () => {
+  const recursive = {
+    id: 'loop',
+    name: 'Loop',
+    nodes: [
+      {
+        id: 'outer',
+        type: 'section',
+        styles: { base: { paddingTop: 4 } },
+        children: [{ id: 'inner', type: 'sharedSection', props: { sectionId: 'loop' } }],
+      },
+    ],
+  };
+  const css = documentStyles([[{ id: 'ref', type: 'sharedSection', props: { sectionId: 'loop' } }]], {
+    ...CTX,
+    sections: { loop: recursive },
+  });
+  assert.match(css, /data-bz-node="outer"/);
+});
+
+test('a page collects the code of the components it places, and no others', () => {
+  const withCode = {
+    id: 'coded',
+    name: 'Coded',
+    css: '.coded{display:flex}',
+    js: 'window.coded = 1;',
+    nodes: [{ id: 'wrap', type: 'section' }],
+  };
+  const unplaced = { id: 'unplaced', name: 'Unplaced', css: '.unplaced{color:red}', nodes: [] };
+  const out = componentCode([[{ id: 'ref', type: 'sharedSection', props: { sectionId: 'coded' } }]], {
+    ...CTX,
+    sections: { coded: withCode, unplaced },
+  });
+  assert.match(out.css, /\.coded/);
+  assert.doesNotMatch(out.css, /\.unplaced/, 'a page that uses one component must not ship twelve');
+  assert.deepEqual(
+    out.scripts.map((s) => s.id),
+    ['coded'],
+  );
+});
+
+test('a component placed twice contributes its code once', () => {
+  const twice = { id: 'twice', name: 'Twice', css: '.twice{gap:1px}', js: 'window.t = 1;', nodes: [] };
+  const page = [
+    { id: 'a', type: 'sharedSection', props: { sectionId: 'twice', values: { x: 1 } } },
+    { id: 'b', type: 'sharedSection', props: { sectionId: 'twice', values: { x: 2 } } },
+  ];
+  const out = componentCode([page], { ...CTX, sections: { twice } });
+  assert.equal(out.css.match(/\.twice/g).length, 1);
+  assert.equal(out.scripts.length, 1);
+});
+
+test('a document with no components compiles exactly as compileNodeStyles did', () => {
+  const nodes = [{ id: 'hero', type: 'section', styles: { base: { paddingTop: 12 } } }];
+  const css = documentStyles([nodes], CTX);
+  assert.match(css, /data-bz-node="hero"/);
+  assert.equal(css, compileNodeStyles(nodes));
 });
 
 /* ------------------------------------------------------ widget previews */
