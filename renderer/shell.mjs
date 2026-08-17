@@ -69,6 +69,12 @@ export function renderShell({
   canonical,
   bodyHtml,
   pageCss,
+  /**
+   * Scripts this page needs, beyond the platform's own. One URL or several: a
+   * page carries its own `script.js` plus the script of every designed component
+   * it places, and those are separate files because a component's script travels
+   * with the component rather than with any one page.
+   */
   pageJs,
   ogImage,
   noindex,
@@ -98,6 +104,10 @@ export function renderShell({
   const scopes = tokenScopes.length
     ? tokenScopes.map((s) => `\n<link rel="stylesheet" href="/styles/tokens.${s}.css" />`).join('')
     : '';
+  const scriptTags = (Array.isArray(pageJs) ? pageJs : pageJs ? [pageJs] : [])
+    .filter(Boolean)
+    .map((src) => `\n<script src="${esc(src)}" defer></script>`)
+    .join('');
 
   // Google Fonts is only contacted when a family is not self-hosted. Emitting
   // the tag unconditionally would mean an empty href, which resolves to this
@@ -151,7 +161,7 @@ ${bodyHtml}
 </main>${custom.beforeFooter ? `\n${custom.beforeFooter}` : ''}
 ${chrome.footer || ''}
 <script src="/scripts/chrome.js" defer></script>
-<script src="/scripts/widgets.js" defer></script>${custom.hasJs ? `\n<script src="/scripts/custom.js" defer></script>` : ''}${pageJs ? `\n<script src="${esc(pageJs)}" defer></script>` : ''}${custom.bodyEnd ? `\n${custom.bodyEnd}` : ''}
+<script src="/scripts/widgets.js" defer></script>${custom.hasJs ? `\n<script src="/scripts/custom.js" defer></script>` : ''}${scriptTags}${custom.bodyEnd ? `\n${custom.bodyEnd}` : ''}
 </body>
 </html>
 `;

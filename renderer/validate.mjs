@@ -54,6 +54,12 @@ function check(schema, value, path, errors) {
 
   if (value === undefined || value === null) return;
 
+  // A value that is nothing but `{{someProp}}` is a placeholder inside a designed
+  // component, and its type is whatever the page binds to it. Checking it here
+  // would reject the only sensible way to write an image placeholder — a string
+  // now, an object once resolved. The resolved value is checked in its place.
+  if (typeof value === 'string' && /^\s*\{\{\s*[^{}]+?\s*\}\}\s*$/.test(value)) return;
+
   if (schema.type && !typeMatches(schema.type, value)) {
     errors.push({ path, message: `expected ${schema.type}, got ${typeOf(value)}` });
     return;

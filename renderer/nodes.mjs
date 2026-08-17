@@ -26,6 +26,8 @@
 
 import { attrs, cls, esc } from './html.mjs';
 import { getBlock } from './blocks.mjs';
+import { BEHAVIOURS, PARTS, behaviourAttrs } from './behaviours.mjs';
+import { bindTree, componentValues, parseComponentProps } from './component-props.mjs';
 
 export const DOCUMENT_VERSION = 2;
 
@@ -49,6 +51,55 @@ const str = (description, extra = {}) => ({ type: 'string', description, ...extr
 const bool = description => ({ type: 'boolean', description });
 
 const SECTION_BACKGROUNDS = ['none', 'paper', 'card', 'ink', 'accent'];
+
+/**
+ * Interactivity, available on anything that can be placed.
+ *
+ * Without these, a tree built in the canvas could only ever be static, and an
+ * interactive component had to be authored as a custom widget — hand-written
+ * markup with template placeholders, which no visual editor can represent. That
+ * put carousels, tabs, accordions and mega menus permanently out of reach of
+ * drag-and-drop, for no reason other than a missing prop: the client script binds
+ * from attributes and does not care which kind of node emitted them.
+ *
+ * So a row can *be* a carousel rail and its columns the slides. No new runtime
+ * code is involved — `blocks.css` already styles the rail off the attribute the
+ * script sets, and the script already accepts any element as a behaviour root.
+ */
+export const BEHAVIOUR_PROPS = {
+  behaviour: str('Client behaviour this node performs. Its parts go on nodes inside.', {
+    enum: ['', ...BEHAVIOURS],
+    default: '',
+  }),
+  behaviourOptions: str('Settings for the behaviour, as a JSON object. Ignored if it does not parse.'),
+  part: str('The role this node plays in the nearest ancestor behaviour.', {
+    enum: ['', ...PARTS],
+    default: '',
+  }),
+};
+
+/**
+ * Props every placeable node accepts, whatever its type.
+ *
+ * `renderNode` has always read `anchor` and `scope` off any widget's wrapper, but
+ * no widget declares them, so a validator walking a widget's own schema called
+ * them invented props and refused the edit. The renderer and the validator
+ * disagreed, and the renderer was right.
+ *
+ * Stating them once fixes that and keeps the behaviour props from having to be
+ * copied into forty widget schemas — which would also have multiplied the AI
+ * contract by five properties per widget. The contract mentions this set once and
+ * the validator falls back to it before rejecting a name.
+ */
+export const UNIVERSAL_PROPS = {
+  anchor: str('An id, so a link can jump to this node. Lower-case, no spaces.'),
+  scope: str('A token set name, to restyle this node and everything inside it.'),
+  repeat: str(
+    'Inside a designed component only: the key of a list prop. This node renders ' +
+      'once per item, with that item\'s fields available to {{bindings}} inside it.',
+  ),
+  ...BEHAVIOUR_PROPS,
+};
 
 /**
  * The layout registry.
@@ -82,6 +133,7 @@ export const LAYOUT_REGISTRY = {
           enum: ['start', 'center', 'end'],
           default: 'start',
         }),
+        ...BEHAVIOUR_PROPS,
       },
     },
     render(node, ctx, renderChildren) {
@@ -101,6 +153,7 @@ export const LAYOUT_REGISTRY = {
         style: styleVars({ '--bz-pad': spacing(props.paddingY) }),
         'data-bz-node': node.id || null,
         'data-bz-type': 'section',
+        ...behaviourAttrs(props, ctx, node.id),
       })}>${body}</section>`;
     },
   },
@@ -124,6 +177,7 @@ export const LAYOUT_REGISTRY = {
           default: 'mobile',
         }),
         reverseStacked: bool('When stacked, show the columns in reverse order.'),
+        ...BEHAVIOUR_PROPS,
       },
     },
     render(node, ctx, renderChildren) {
@@ -138,6 +192,7 @@ export const LAYOUT_REGISTRY = {
         style: styleVars({ '--bz-gap': spacing(props.gap ?? 6) }),
         'data-bz-node': node.id || null,
         'data-bz-type': 'row',
+        ...behaviourAttrs(props, ctx, node.id),
       })}>${renderChildren(node.children, ctx)}</div>`;
     },
   },
@@ -162,6 +217,7 @@ export const LAYOUT_REGISTRY = {
         }),
         padding: int('Inner padding, on the spacing scale.', { minimum: 0, maximum: 10, default: 0 }),
         background: str('Surface behind this column.', { enum: SECTION_BACKGROUNDS, default: 'none' }),
+        ...BEHAVIOUR_PROPS,
       },
     },
     render(node, ctx, renderChildren) {
@@ -179,6 +235,7 @@ export const LAYOUT_REGISTRY = {
         }),
         'data-bz-node': node.id || null,
         'data-bz-type': 'column',
+        ...behaviourAttrs(props, ctx, node.id),
       })}>${renderChildren(node.children, ctx)}</div>`;
     },
   },
@@ -212,7 +269,121 @@ export const LAYOUT_REGISTRY = {
       })}><span class="bz-contentarea__label">${esc(label)}</span></div>`;
     },
   },
+
+  /**
+   * A shared section: one tree, stored once, placed on many pages.
+   *
+   * The reusable-block idea, and the counterpart to a custom widget rather than a
+   * replacement for it. A widget is a *template* — `{{#each}}` over props, so one
+   * definition renders fifty different specs. A shared section is a fixed
+   * *arrangement* of real nodes: a CTA band, a testimonial strip, a footer promo,
+   * built in the ordinary canvas with the ordinary widgets and layout, then reused.
+   * Changing it changes every page that places it, which is the whole point and
+   * also the reason it is edited in one place and nowhere else.
+   *
+   * On a page it is a reference and holds no children of its own (`accepts: []`).
+   * The tree it names lives in `site/sections/<id>.json` and arrives on
+   * `ctx.sections`; this node expands it at render time, so the published HTML
+   * carries the real markup and there is no runtime indirection.
+   */
+  sharedSection: {
+    id: 'sharedSection',
+    label: 'Shared section',
+    category: 'layout',
+    accepts: [],
+    autoTagged: true,
+    schema: {
+      type: 'object',
+      properties: {
+        sectionId: str('Which shared section to place, by id.'),
+        values: {
+          type: 'object',
+          description:
+            'Content for this placement, keyed by the component\'s declared prop keys. ' +
+            'Anything left out falls back to the prop\'s default, so a placement need only ' +
+            'state what differs.',
+        },
+      },
+      required: ['sectionId'],
+    },
+    render(node, ctx, renderChildren) {
+      const id = String((node.props && node.props.sectionId) || '').trim();
+      const section = id ? ((ctx && ctx.sections) || {})[id] : null;
+
+      if (!section) {
+        if (ctx && ctx.warn) {
+          ctx.warn(
+            id
+              ? `Shared section "${id}" (${node.id || '?'}) is not in site/sections/ — nothing was placed.`
+              : `A shared section (${node.id || '?'}) names no section — nothing was placed.`,
+          );
+        }
+        // Visible in the editor, absent from the published page: a dealer needs to
+        // see that something is missing, a visitor must not see a hole.
+        if (!ctx || !ctx.editing) return '';
+        return `<div${attrs({
+          class: 'bz-sharedsection bz-sharedsection--missing',
+          'data-bz-node': node.id || null,
+          'data-bz-type': 'sharedSection',
+        })}><span class="bz-sharedsection__label">${esc(
+          id ? `Shared section “${id}” no longer exists` : 'Pick a shared section',
+        )}</span></div>`;
+      }
+
+      // A section that contains itself, directly or through another, would recur
+      // until the stack ran out. The cycle is reported and cut rather than left to
+      // crash a dealer's build.
+      if (expanding.has(id)) {
+        if (ctx && ctx.warn) ctx.warn(`Shared section "${id}" contains itself — the repeat was dropped.`);
+        return '';
+      }
+
+      // The definition holds the shape; this placement holds the content. Binding
+      // happens here, once, against a tree that is cloned rather than mutated —
+      // two placements of the same component must not see each other's values.
+      const declared = parseComponentProps(section.props);
+      const values = componentValues(declared, node.props && node.props.values);
+
+      expanding.add(id);
+      let inner;
+      try {
+        inner = renderChildren(
+          bindTree(parseDocument(section).nodes, values, { keepEmptyRepeat: !!(ctx && ctx.editing) }),
+          ctx,
+        );
+      } finally {
+        expanding.delete(id);
+      }
+
+      return `<div${attrs({
+        class: 'bz-sharedsection',
+        'data-bz-node': node.id || null,
+        'data-bz-type': 'sharedSection',
+        'data-bz-section': id,
+        // The canvas is authoritative about page structure and reads the tree back
+        // out of the DOM. Expanded nodes are not part of this page, so in the
+        // editor they are handed over as inert markup — otherwise a save would
+        // copy the shared section's insides into the page and the two would
+        // silently stop being the same thing.
+        'data-bz-opaque': ctx && ctx.editing ? '1' : null,
+      })}>${ctx && ctx.editing ? inert(inner) : inner}</div>`;
+    },
+  },
 };
+
+/** Ids currently being expanded, so a cycle is caught instead of overflowing. */
+const expanding = new Set();
+
+/**
+ * Strip the attributes the canvas builds its component tree from.
+ *
+ * Only used for a shared section's expansion in the editor. The markup still
+ * renders exactly as it will on the page — it simply stops looking like part of
+ * this page's tree.
+ */
+function inert(html) {
+  return String(html).replace(/\s(?:data-bz-node|data-bz-type)="[^"]*"/g, '');
+}
 
 function clamp(value, min, max) {
   const n = Number(value);
@@ -253,6 +424,11 @@ export function isContainer(type) {
  * editor allows can never be a tree the build rejects.
  */
 export function accepts(parentType, childType) {
+  // A shared section expands to whatever its own tree holds — commonly sections,
+  // which cannot sit inside a column. Rather than validate the placement against
+  // the contents of a tree that can change later, it goes where a section goes:
+  // the top level, and nowhere else.
+  if (childType === 'sharedSection') return parentType == null;
   // The document root takes anything except a bare column, which has no grid to
   // sit in. Sections are the usual top level, but a row or a widget placed
   // straight on the page is a normal thing to want and refusing it would be a
@@ -407,6 +583,10 @@ function renderNode(node, ctx, depth) {
     'data-bz-node': node.id || null,
     'data-bz-type': node.type,
     'data-bz-tokens': props.scope || null,
+    // Applied on the wrapper for every widget, like `anchor` and `scope` above, so
+    // a plain button can be a carousel's next arrow and a card can be a slide
+    // without either widget knowing that behaviours exist.
+    ...behaviourAttrs(props, ctx, node.id),
   })}>${inner}</div>`;
 }
 

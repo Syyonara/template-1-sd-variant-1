@@ -18,26 +18,36 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
-export const RENDERER_VERSION = '4.4.0';
+// 4.6.0 — designed components take placeholders. A component declares `props`,
+// its nodes bind to them with `{{key}}`, a node can `repeat` over a list prop, and
+// a `sharedSection` placing it supplies `values`. Until now a reusable component
+// was identical everywhere it appeared, which is reuse in name only: the same
+// carousel with different logos meant a second copy of the carousel.
+//
+// 4.5.0 — behaviour, behaviourOptions and part are props on every node, so an
+// interactive component can be a tree the canvas builds rather than markup a
+// person or a model hand-writes. `anchor` and `scope` join them as declared
+// universal props: the renderer always read those off any node's wrapper while no
+// widget declared them, so the validator refused edits the build would render.
+export const RENDERER_VERSION = '4.6.0';
 
-/**
- * Client behaviours a node may opt into with `data-bz-behavior`.
- *
- * Declared here rather than only in the browser script because three consumers
- * need the list: the AI contract states what markup may ask for, the validator
- * rejects a name nothing implements, and the style panel offers them. The
- * implementations live in `renderer/client/widgets.js`.
- */
-export const BEHAVIOURS = [
-  'carousel',
-  'filter',
-  'dropdown',
-  'drawer',
-  'rotator',
-  'scrollstate',
-  'dependentselect',
-  'mapsync',
-];
+export {
+  BEHAVIOURS,
+  BEHAVIOUR_PARTS,
+  BEHAVIOUR_OPTIONS,
+  PARTS,
+  behaviourAttrs,
+} from './behaviours.mjs';
+
+export {
+  bindTree,
+  bindingsUsed,
+  componentSampleValues,
+  componentValues,
+  isBinding,
+  parseComponentProps,
+  previewProps,
+} from './component-props.mjs';
 
 export { esc, attrs, tagAttrs, heading, image, join, cls, href, isExternal } from './html.mjs';
 export {
@@ -68,6 +78,8 @@ export {
   CONTAINER_TYPES,
   GRID_COLUMNS,
   LAYOUT_REGISTRY,
+  UNIVERSAL_PROPS,
+  BEHAVIOUR_PROPS,
   ROW_PRESETS,
   accepts,
   ensureIds,
@@ -109,6 +121,8 @@ export {
   compileTemplate,
   widgetSchema,
   defaultProps as widgetDefaultProps,
+  previewProps as widgetPreviewProps,
+  renderWidgetPreview,
   scopeCss,
   stripUnsafeHtml,
   stripUnsafeCss,

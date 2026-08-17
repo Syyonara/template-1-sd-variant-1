@@ -29,6 +29,9 @@ import {
   STYLE_BUCKETS,
   STYLE_FIELDS,
   STYLE_GROUPS,
+  BEHAVIOUR_PARTS,
+  BEHAVIOUR_OPTIONS,
+  UNIVERSAL_PROPS,
   blockCatalogue,
   layoutCatalogue,
   staticWidgetIds,
@@ -46,7 +49,11 @@ const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'renderer', 'blo
  */
 const layout = layoutCatalogue();
 const nesting = {
-  root: { accepts: ['section', 'row', 'contentArea', 'widget'] },
+  // A shared section is top level only, so it appears here and under no other
+  // parent. This list is what the server validator enforces — the renderer's
+  // `accepts()` predicate says the same thing in code, and the two disagreeing
+  // means a drop the editor allows becomes a tree the build rejects.
+  root: { accepts: ['section', 'row', 'contentArea', 'widget', 'sharedSection'] },
   ...Object.fromEntries(layout.map(node => [node.id, { accepts: node.accepts }])),
 };
 
@@ -65,7 +72,11 @@ const catalogue = {
   widgetGroups: WIDGET_GROUPS,
   staticWidgets: staticWidgetIds(),
   // Prop editor types a custom widget definition may declare.
+  // One vocabulary, two kinds of component: a coded widget's props and a designed
+  // component's props are declared identically, so the inspector that edits one
+  // edits the other and the AI contract states the list once.
   customWidgetPropTypes: PROP_TYPES,
+  componentPropTypes: PROP_TYPES,
   // Instance style overrides: the fields a node's `styles` buckets may set.
   // Functions cannot travel as JSON, so the validator gets names + options and
   // enforces "known field" — value shape is re-checked by the renderer at
@@ -90,6 +101,14 @@ const catalogue = {
   ),
   // Client behaviours a node may opt into via data-bz-behavior.
   behaviours: BEHAVIOURS,
+  // Which parts each behaviour looks for, and what each reads from its options.
+  // A mismarked part fails silently — the script finds nothing and does not
+  // enhance — so the names have to travel to whoever authors the markup.
+  behaviourParts: BEHAVIOUR_PARTS,
+  behaviourOptions: BEHAVIOUR_OPTIONS,
+  // Props valid on any node regardless of type. The validator falls back to these
+  // before calling a prop invented, which is what `anchor` on a widget always was.
+  universalProps: UNIVERSAL_PROPS,
   layout,
   nesting,
   widgets: blockCatalogue(),

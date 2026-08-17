@@ -102,6 +102,32 @@
   color: var(--accent-dark);
 }
 
+/* A shared section carries no styling of its own — it expands to real nodes and
+   must look identical to the same tree placed directly, or "reuse this" would
+   change the design. Only the two editor states below draw anything. */
+[data-bz-opaque] { position: relative; }
+[data-bz-opaque]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  outline: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  outline-offset: -1px;
+  pointer-events: none;
+}
+.bz-sharedsection--missing {
+  min-height: 120px;
+  border: 2px dashed var(--warn, #b45309);
+  border-radius: var(--radius-card);
+  display: grid;
+  place-items: center;
+}
+.bz-sharedsection__label {
+  font: 700 var(--text-small) / 1 var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--warn, #b45309);
+}
+
 /* Widgets sit closer together than sections do; a heading followed by a
    paragraph should not read as two separate bands. */
 .bz-block { padding-block: var(--space-4); }

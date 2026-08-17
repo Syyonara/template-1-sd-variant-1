@@ -285,7 +285,15 @@ function parseNodes(tokens, start, expectClose) {
 
 /* -------------------------------------------------------------- evaluation */
 
-function lookup(path, scopes) {
+/**
+ * Resolve a dotted path against a stack of scopes, innermost first.
+ *
+ * Exported because designed components bind their node props with the same
+ * `{{key}}` paths this engine reads in widget markup. Two lookups would be two
+ * dialects, and a dealer moving between a coded widget and a designed one would
+ * have to know which they were in.
+ */
+export function lookup(path, scopes) {
   if (!path) return undefined;
   if (path === '.' || path === 'this') return scopes[scopes.length - 1].value;
   if (path === '@index') return scopes[scopes.length - 1].index;
@@ -363,7 +371,12 @@ function renderNodes(nodes, scopes, ctx) {
 
 function scalar(value) {
   if (value == null) return '';
-  if (typeof value === 'object') return '';
+  // An image prop is `{ src, alt }`, and `{{logo}}` inside src="…" is what anyone
+  // writing this template reaches for first — the AI included. Returning '' for it
+  // produced `src=""`: a broken image, with nothing anywhere saying why. The `img`
+  // helper is still the better form because it emits dimensions and lazy loading,
+  // but the plain interpolation has an obvious meaning and now does it.
+  if (typeof value === 'object') return typeof value.src === 'string' ? value.src : '';
   return value;
 }
 
@@ -456,7 +469,14 @@ export function parseWidgetDefinition(raw, fallbackId) {
   };
 }
 
-function normaliseProp(entry, errors, seenKeys) {
+/**
+ * One declared prop, checked and filled in. `null` when it cannot be salvaged.
+ *
+ * Shared with designed components, whose props are declared the same way and
+ * carry the same types — the only difference is what consumes them, markup in
+ * one case and node props in the other.
+ */
+export function normaliseProp(entry, errors, seenKeys) {
   if (!entry || typeof entry !== 'object') {
     errors.push('each prop must be an object');
     return null;
@@ -618,6 +638,101 @@ export function defaultProps(definition) {
     else out[prop.key] = prop.label;
   }
   return out;
+}
+
+/**
+ * Props for *showing what a widget looks like*, which is not the same question
+ * as what a fresh instance starts with.
+ *
+ * `defaultProps` is right to leave a list empty — a newly placed widget must not
+ * invent content nobody typed. But a preview built from those defaults renders an
+ * empty box, and an empty box is exactly what a logo carousel, a spec strip or a
+ * testimonial slider all look like with no rows. That made the editor's preview
+ * useless for the whole class of widget people actually build.
+ *
+ * So a preview fills lists with a few sample rows and gives images a visible
+ * placeholder. Nothing here is ever committed: it exists to answer "is this the
+ * layout I meant".
+ */
+export function previewProps(definition, rows = 3) {
+  const sample = (type, label, index) => {
+    switch (type) {
+      case 'boolean':
+        return true;
+      case 'number':
+        return index + 1;
+      case 'image':
+        return { src: PREVIEW_IMAGE, alt: `${label} ${index + 1}` };
+      case 'url':
+        return '#';
+      case 'color':
+        return 'var(--accent)';
+      case 'richtext':
+      case 'textarea':
+        return `${label} — sample copy for the preview.`;
+      default:
+        return rows > 1 ? `${label} ${index + 1}` : label;
+    }
+  };
+
+  const out = {};
+  for (const prop of definition.props || []) {
+    const label = prop.label || prop.key;
+    if (prop.type === 'list') {
+      // A list with one row cannot show what a repeating layout does, and a list
+      // with a dozen makes the preview the wrong shape. Three reads as "several".
+      const fields = prop.fields || [];
+      out[prop.key] = Array.from({ length: rows }, (_, i) =>
+        Object.fromEntries(
+          fields.map(field => [field.key, sample(field.type, field.label || field.key, i)]),
+        ),
+      );
+      continue;
+    }
+    if (prop.default !== undefined && prop.default !== '') {
+      out[prop.key] = prop.default;
+      continue;
+    }
+    if (prop.type === 'select') {
+      out[prop.key] = prop.options?.[0]?.value ?? '';
+      continue;
+    }
+    out[prop.key] = sample(prop.type, label, 0);
+  }
+  return out;
+}
+
+/** A neutral inline SVG, so a preview needs no network and no uploaded asset. */
+const PREVIEW_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 160'%3E%3Crect width='240' height='160' fill='%23e5e7eb'/%3E%3Cpath d='M0 160 96 64l48 48 32-32 64 80z' fill='%23cbd5e1'/%3E%3Ccircle cx='176' cy='44' r='20' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
+/**
+ * Render one definition on its own, for an editor preview.
+ *
+ * Exists because the obvious way to do this is wrong in a way that looks right.
+ * Calling `renderDocument` with a node of the widget's type only works for a
+ * widget already in the registry — so a definition being *edited* rendered the
+ * last saved version, and a definition being *created* rendered nothing at all,
+ * silently, because an unknown type is a warning and an empty string.
+ *
+ * Compiling and rendering directly removes the registry from the question. The
+ * `.bz-block--<id>` wrapper is not decoration: `compileWidget` scopes the CSS to
+ * that class, so without it none of the widget's own styles apply.
+ */
+export function renderWidgetPreview(definition, ctx = {}, props) {
+  const { definition: parsed, errors } = parseWidgetDefinition(definition);
+  if (!parsed) return { html: '', css: '', errors };
+  try {
+    const compiled = compileWidget(parsed);
+    const inner = compiled.render(props ?? previewProps(parsed), { editing: true, ...ctx });
+    return {
+      html: inner ? `<div class="bz-block bz-block--${parsed.id}">${inner}</div>` : '',
+      css: compiled.css,
+      errors: [],
+    };
+  } catch (err) {
+    return { html: '', css: '', errors: [err.message] };
+  }
 }
 
 /* ----------------------------------------------------------------- compile */

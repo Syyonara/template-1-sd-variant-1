@@ -136,8 +136,11 @@ export function parseTemplate(raw, fallbackId) {
     name: String(raw.name || id),
     conditions: normaliseConditions(raw.conditions),
     nodes: document.nodes,
-    // The template's own custom CSS, carried to every page that uses it.
+    // The template's own custom CSS and JS, carried to every page that uses it.
+    // Chrome is where a sticky header or a mega menu lives, so a template is the
+    // surface most likely to want a script of its own.
     css: typeof raw.css === 'string' ? raw.css : '',
+    js: typeof raw.js === 'string' ? raw.js : '',
     legacySlot,
   };
 }

@@ -4,9 +4,15 @@ import assert from 'node:assert/strict';
 import {
   accepts,
   applyOps,
+  bindTree,
+  bindingsUsed,
   blockCatalogue,
   blockRegistry,
   clearCustomWidgets,
+  componentSampleValues,
+  componentValues,
+  parseComponentProps,
+  previewProps,
   compileNodeStyles,
   compileTokens,
   compileTokenScope,
@@ -25,8 +31,16 @@ import {
   parseMenus,
   parseTemplates,
   parseWidgetDefinition,
+  getBlock,
+  BEHAVIOURS,
+  BEHAVIOUR_PARTS,
+  PARTS,
+  UNIVERSAL_PROPS,
+  widgetDefaultProps,
+  widgetPreviewProps,
   registerCustomWidgets,
   renderDocument,
+  renderWidgetPreview,
   renderForm,
   renderMenu,
   resolveTemplate,
@@ -782,4 +796,494 @@ test('a form renders its fields with the tagging attributes analytics needs', ()
   const html = renderForm(CTX.forms.contact, CTX);
   assert.match(html, /data-bz-el="form"/);
   assert.match(html, /name="name"/);
+});
+
+/* --------------------------------------------------------- shared sections */
+
+const SHARED_CTX = {
+  ...CTX,
+  sections: {
+    'cta-band': {
+      id: 'cta-band',
+      name: 'CTA band',
+      nodes: [
+        {
+          id: 'sec',
+          type: 'section',
+          props: { background: 'accent' },
+          children: [{ id: 'h', type: 'heading', props: { text: 'Talk to us' } }],
+        },
+      ],
+    },
+  },
+};
+
+test('a shared section expands to its own tree where it sits', () => {
+  const html = renderDocument(
+    { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'cta-band' } }] },
+    SHARED_CTX,
+  );
+  // The real markup, not a reference the visitor has to resolve.
+  assert.match(html, /data-bz-section="cta-band"/);
+  assert.match(html, /bz-section--bg-accent/);
+  assert.match(html, /Talk to us/);
+});
+
+test('the same tree placed directly and through a shared section render alike', () => {
+  const direct = renderDocument({ nodes: SHARED_CTX.sections['cta-band'].nodes }, SHARED_CTX);
+  const shared = renderDocument(
+    { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'cta-band' } }] },
+    SHARED_CTX,
+  );
+  // Reuse must not restyle: the wrapper is the only difference.
+  assert.ok(shared.includes(direct), 'the expansion must be the same markup, wrapped');
+});
+
+test('a shared section goes at the top level and nowhere else', () => {
+  assert.equal(accepts(null, 'sharedSection'), true);
+  // Its tree usually holds sections, which cannot sit in a column — so rather
+  // than validate against contents that can change later, placement is fixed.
+  assert.equal(accepts('column', 'sharedSection'), false);
+  assert.equal(accepts('section', 'sharedSection'), false);
+  assert.equal(accepts('row', 'sharedSection'), false);
+  // It holds nothing of its own: it is edited in one place, not in the page.
+  assert.equal(accepts('sharedSection', 'heading'), false);
+  assert.equal(accepts('sharedSection', 'row'), false);
+});
+
+test('a missing shared section is visible in the editor and absent from the page', () => {
+  const doc = { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'gone' } }] };
+
+  const warnings = [];
+  const published = renderDocument(doc, { ...SHARED_CTX, warn: (m) => warnings.push(m) });
+  assert.equal(published, '', 'a visitor must not see a hole');
+  assert.match(warnings.join(' '), /"gone"/);
+
+  const editing = renderDocument(doc, { ...SHARED_CTX, editing: true });
+  assert.match(editing, /bz-sharedsection--missing/);
+  assert.match(editing, /no longer exists/);
+});
+
+test('a shared section that contains itself is cut, not overflowed', () => {
+  const warnings = [];
+  const html = renderDocument(
+    { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'loop' } }] },
+    {
+      ...CTX,
+      warn: (m) => warnings.push(m),
+      sections: {
+        loop: {
+          id: 'loop',
+          nodes: [
+            {
+              id: 'sec',
+              type: 'section',
+              children: [{ id: 'h', type: 'heading', props: { text: 'Once' } }],
+            },
+            { id: 'again', type: 'sharedSection', props: { sectionId: 'loop' } },
+          ],
+        },
+      },
+    },
+  );
+  // Rendered once, then stopped — and said so.
+  assert.equal(html.match(/Once/g).length, 1);
+  assert.match(warnings.join(' '), /contains itself/);
+});
+
+test("the editor never sees the expansion as part of the page's own tree", () => {
+  const doc = { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'cta-band' } }] };
+
+  const editing = renderDocument(doc, { ...SHARED_CTX, editing: true });
+  // The canvas reads structure back out of the DOM, so the inner nodes must not
+  // look like page nodes — otherwise a save would copy them into the page.
+  assert.equal(editing.match(/data-bz-node/g).length, 1, 'only the reference itself is a node');
+  assert.doesNotMatch(editing, /data-bz-type="section"/);
+  assert.match(editing, /data-bz-opaque="1"/);
+
+  // Published, the attributes stay: nothing is reading the page back there.
+  const published = renderDocument(doc, SHARED_CTX);
+  assert.match(published, /data-bz-type="section"/);
+  assert.doesNotMatch(published, /data-bz-opaque/);
+});
+
+/* --------------------------------------------------- component placeholders */
+
+/**
+ * A component that renders the same content everywhere it is placed is reusable
+ * in name only. These pin the three pieces that make it genuinely reusable:
+ * declared props, `{{key}}` bindings in the tree, and a node that repeats over a
+ * list. Between them they are what lets one carousel definition serve a page with
+ * four logos and a page with twelve.
+ */
+const LOGOS = {
+  id: 'logos',
+  name: 'Logo carousel',
+  props: [
+    { key: 'heading', type: 'text', label: 'Heading', default: 'Brands we carry' },
+    {
+      key: 'logos',
+      type: 'list',
+      label: 'Logos',
+      fields: [
+        { key: 'image', type: 'image', label: 'Logo' },
+        { key: 'name', type: 'text', label: 'Name' },
+      ],
+    },
+  ],
+  nodes: [
+    {
+      id: 'sec',
+      type: 'section',
+      props: { behaviour: 'carousel' },
+      children: [
+        { id: 'title', type: 'heading', props: { text: '{{heading}}' } },
+        {
+          id: 'rail',
+          type: 'row',
+          props: { part: 'track' },
+          children: [
+            {
+              id: 'slide',
+              type: 'column',
+              props: { span: 3, part: 'slide', repeat: 'logos' },
+              children: [{ id: 'pic', type: 'image', props: { image: '{{image}}', alt: '{{name}}' } }],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const LOGO_CTX = { ...CTX, sections: { logos: LOGOS } };
+
+const place = (values, ctx = LOGO_CTX) =>
+  renderDocument(
+    { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'logos', values } }] },
+    ctx,
+  );
+
+test('a placement supplies its own content, and omissions fall back to defaults', () => {
+  const html = place({ heading: 'Our partners' });
+  assert.match(html, /Our partners/);
+  assert.doesNotMatch(html, /Brands we carry/);
+  // A binding must never reach the page as its own source text.
+  assert.doesNotMatch(html, /\{\{/);
+
+  assert.match(place({}), /Brands we carry/, 'no value given means the declared default');
+});
+
+test('two placements of one component do not see each other content', () => {
+  const first = place({ heading: 'First' });
+  const second = place({ heading: 'Second' });
+  assert.match(first, /First/);
+  assert.doesNotMatch(first, /Second/);
+  assert.match(second, /Second/);
+  assert.doesNotMatch(second, /First/);
+});
+
+test('a node bound to a list repeats once per item', () => {
+  const html = place({
+    logos: [
+      { image: { src: '/a.png', alt: 'A' }, name: 'Alpha' },
+      { image: { src: '/b.png', alt: 'B' }, name: 'Beta' },
+      { image: { src: '/c.png', alt: 'C' }, name: 'Gamma' },
+    ],
+  });
+  assert.equal(html.match(/bz-col/g).length, 3, 'three logos, three slides');
+  assert.match(html, /\/a\.png/);
+  assert.match(html, /\/c\.png/);
+  // Ids stay unique or the canvas would treat two slides as the same slide.
+  assert.doesNotMatch(html, /data-bz-node="slide"/);
+  assert.match(html, /data-bz-node="slide-1"/);
+  assert.match(html, /data-bz-node="slide-3"/);
+});
+
+test('an image prop bound whole receives the object, not its string form', () => {
+  const html = place({ logos: [{ image: { src: '/logo.svg', alt: 'ACME' }, name: 'ACME' }] });
+  // The bug this exists to prevent: `src="[object Object]"`, or `src=""`.
+  assert.match(html, /src="\/logo\.svg"/);
+  assert.doesNotMatch(html, /object Object/);
+  assert.doesNotMatch(html, /src=""/);
+});
+
+test('a binding inside a sentence interpolates rather than replacing it', () => {
+  const nodes = bindTree(
+    [{ id: 'p', type: 'paragraph', props: { text: 'Trusted by {{count}} dealers since {{year}}.' } }],
+    { count: 40, year: '1998' },
+  );
+  assert.equal(nodes[0].props.text, 'Trusted by 40 dealers since 1998.');
+});
+
+test("a dealer's content is data, not a template that gets evaluated again", () => {
+  // Someone writing "{{ }}" in a heading means those characters. Re-scanning a
+  // supplied value would make dealer content executable and could recurse.
+  const html = place({ heading: 'Braces {{heading}} stay put' });
+  assert.match(html, /Braces \{\{heading\}\} stay put/);
+});
+
+test('an empty list renders nothing published, and one placeholder in the editor', () => {
+  assert.doesNotMatch(place({ logos: [] }), /bz-col/, 'a visitor must not see a phantom slide');
+  const editing = place({ logos: [] }, { ...LOGO_CTX, editing: true });
+  assert.match(editing, /bz-col/, 'a repeat that vanishes looks like a bug to whoever built it');
+});
+
+test('a component with no props declared behaves exactly as it did before', () => {
+  const html = renderDocument(
+    { nodes: [{ id: 'ref', type: 'sharedSection', props: { sectionId: 'cta-band' } }] },
+    SHARED_CTX,
+  );
+  assert.match(html, /Talk to us/);
+});
+
+test('bindingsUsed finds every prop a tree depends on', () => {
+  const used = bindingsUsed(LOGOS.nodes);
+  assert.deepEqual([...used].sort(), ['heading', 'image', 'logos', 'name']);
+});
+
+test('stale values for props the component dropped are not fed to the tree', () => {
+  const values = componentValues(parseComponentProps(LOGOS.props), {
+    heading: 'Kept',
+    removedLongAgo: 'Should not survive',
+  });
+  assert.deepEqual(Object.keys(values).sort(), ['heading', 'logos']);
+});
+
+/**
+ * The canvas renders node by node, so it cannot use `bindTree`. Without this a
+ * slide showed the literal text `{{name}}`, which reads as a broken component
+ * rather than as a decision the placing page will make.
+ */
+test('a preview resolves a binding against the sample values', () => {
+  const props = parseComponentProps(LOGOS.props);
+  const values = componentSampleValues(props);
+  const shown = previewProps({ text: '{{heading}}', level: 2 }, values);
+  assert.equal(shown.text, values.heading);
+  assert.equal(shown.level, 2, 'an unbound prop is untouched');
+});
+
+test('a preview inside a repeat resolves the item, not the outer scope', () => {
+  const props = parseComponentProps(LOGOS.props);
+  const values = componentSampleValues(props);
+  const item = values.logos[0];
+  const shown = previewProps({ image: '{{image}}', alt: '{{name}}' }, values, item);
+  assert.deepEqual(shown.image, item.image, 'an image resolves whole, not as a string');
+  assert.equal(shown.alt, item.name);
+});
+
+test('a preview drops repeat, which is an instruction rather than a prop', () => {
+  const shown = previewProps({ repeat: 'logos', span: 3 }, { logos: [] });
+  assert.equal('repeat' in shown, false);
+  assert.equal(shown.span, 3);
+});
+
+test('a preview leaves a binding nothing declares empty rather than literal', () => {
+  const shown = previewProps({ text: '{{nobodyDeclaredThis}}' }, {});
+  assert.equal(shown.text, '');
+});
+
+/* ------------------------------------------------------ widget previews */
+
+/**
+ * The editor's preview was empty for every widget, always, and silently.
+ * `renderDocument` resolves a node's type through the registry, and a definition
+ * being edited is not in it — so a new widget rendered nothing and a saved one
+ * rendered its last committed version. These pin the preview to the definition in
+ * front of the dealer.
+ */
+test('a preview renders the definition being edited, not the registered one', () => {
+  clearCustomWidgets();
+  const def = {
+    id: 'promo-strip',
+    label: 'Promo strip',
+    props: [{ key: 'heading', type: 'text', label: 'Heading' }],
+    html: '<div class="promo"><h3>{{heading}}</h3></div>',
+    css: '.promo{display:flex}',
+  };
+
+  const out = renderWidgetPreview(def);
+  assert.deepEqual(out.errors, []);
+  assert.match(out.html, /class="promo"/);
+  // Nothing was registered: an unregistered definition still previews.
+  assert.equal(getBlock('promo-strip'), null);
+  // The wrapper is load-bearing — the CSS is scoped to it.
+  assert.match(out.css, /\.bz-block--promo-strip \.promo/);
+  assert.match(out.html, /bz-block--promo-strip/);
+});
+
+test('a preview fills a repeating list, because an empty one shows nothing', () => {
+  const def = {
+    id: 'logo-wall',
+    label: 'Logo wall',
+    props: [{ key: 'logos', type: 'list', label: 'Logo', fields: [{ key: 'image', type: 'image', label: 'Logo' }] }],
+    html: '<div class="wall">{{#each logos}}<span>{{img image}}</span>{{/each}}</div>',
+  };
+
+  // What a real placed instance starts with — deliberately empty.
+  assert.deepEqual(widgetDefaultProps(def).logos, []);
+
+  // What the preview shows instead, so the layout is judgeable.
+  assert.equal(widgetPreviewProps(def).logos.length, 3);
+  const out = renderWidgetPreview(def);
+  assert.equal(out.html.match(/<img/g).length, 3);
+  // No network and no uploaded asset needed for a placeholder.
+  assert.match(out.html, /data:image\/svg\+xml/);
+});
+
+test('a preview keeps the behaviour wiring the published page relies on', () => {
+  const out = renderWidgetPreview({
+    id: 'quote-slider',
+    label: 'Quote slider',
+    props: [{ key: 'quotes', type: 'list', label: 'Quote', fields: [{ key: 'text', type: 'text', label: 'Quote' }] }],
+    html:
+      '<div data-bz-behavior="carousel" data-bz-behavior-options=\'{"label":"Quotes"}\'>' +
+      '<div data-bz-part="track">{{#each quotes}}<blockquote data-bz-part="slide">{{text}}</blockquote>{{/each}}</div>' +
+      '<button data-bz-part="prev">Prev</button><button data-bz-part="next">Next</button></div>',
+  });
+  // Behaviour is bound from these attributes at runtime, so a preview that
+  // stripped them could not be made interactive later.
+  assert.match(out.html, /data-bz-behavior="carousel"/);
+  assert.equal(out.html.match(/data-bz-part="slide"/g).length, 3);
+  assert.match(out.html, /data-bz-part="track"/);
+});
+
+test('a broken template previews as its error, never as a blank box', () => {
+  const out = renderWidgetPreview({ id: 'bad', label: 'Bad', html: '<div data-bz-slot="main"></div>' });
+  assert.equal(out.html, '');
+  assert.ok(out.errors.length, 'the reason has to reach the dealer');
+});
+
+/* -------------------------------------------- behaviours on canvas nodes */
+
+/**
+ * The reason a carousel had to be hand-written as a custom widget: no node a
+ * dealer could drag carried the attributes the client script binds from. These
+ * pin the whole wiring for a logo carousel built entirely out of layout nodes.
+ */
+test('a tree of layout nodes carries a full carousel', () => {
+  const html = renderDocument({
+    nodes: [
+      {
+        id: 'logos',
+        type: 'section',
+        props: { behaviour: 'carousel', behaviourOptions: '{"label":"Our partners","perMove":2}' },
+        children: [
+          {
+            id: 'rail',
+            type: 'row',
+            props: { part: 'track' },
+            children: [
+              { id: 'c1', type: 'column', props: { span: 3, part: 'slide' }, children: [] },
+              { id: 'c2', type: 'column', props: { span: 3, part: 'slide' }, children: [] },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.match(html, /<section[^>]+data-bz-behavior="carousel"/);
+  // Options reach the script as JSON on the attribute it reads.
+  assert.match(html, /data-bz-behavior-options="[^"]*Our partners/);
+  // The rail: blocks.css styles the scroll-snap strip off the attribute the
+  // script sets on whatever is marked as the track.
+  assert.match(html, /data-bz-part="track"/);
+  assert.equal(html.match(/data-bz-part="slide"/g).length, 2);
+});
+
+test('a widget instance can be a behaviour part, so arrows are placeable', () => {
+  const html = renderDocument({
+    nodes: [
+      {
+        id: 's',
+        type: 'section',
+        props: { behaviour: 'carousel' },
+        children: [
+          {
+            id: 'nav',
+            type: 'row',
+            children: [
+              {
+                id: 'col',
+                type: 'column',
+                props: { span: 12 },
+                children: [{ id: 'n', type: 'buttons', props: { items: [{ label: 'Next', url: '#' }], part: 'next' } }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  assert.match(html, /data-bz-part="next"/);
+});
+
+test('an unknown behaviour or part is dropped with a warning, never emitted', () => {
+  const warnings = [];
+  const html = renderDocument(
+    { nodes: [{ id: 'x', type: 'section', props: { behaviour: 'sparkle', part: 'wheel' } }] },
+    { warn: m => warnings.push(m) },
+  );
+  assert.doesNotMatch(html, /data-bz-behavior|data-bz-part/);
+  assert.equal(warnings.length, 2);
+  assert.match(warnings[0], /Unknown behaviour "sparkle"/);
+});
+
+test('malformed behaviour options are dropped, not written into the attribute', () => {
+  const warnings = [];
+  const html = renderDocument(
+    { nodes: [{ id: 'x', type: 'section', props: { behaviour: 'carousel', behaviourOptions: '{oops' } }] },
+    { warn: m => warnings.push(m) },
+  );
+  // The behaviour still binds — losing its settings must not lose the behaviour.
+  assert.match(html, /data-bz-behavior="carousel"/);
+  assert.doesNotMatch(html, /data-bz-behavior-options/);
+  assert.match(warnings[0], /not valid JSON/);
+});
+
+test('every part name a behaviour looks for is in the vocabulary', () => {
+  // The picker and the validator both offer PARTS; a part implemented but absent
+  // from the list would be rejected as a typo and fail silently for a dealer.
+  for (const [behaviour, parts] of Object.entries(BEHAVIOUR_PARTS)) {
+    assert.ok(BEHAVIOURS.includes(behaviour), `${behaviour} is implemented`);
+    for (const name of Object.keys(parts)) {
+      assert.ok(PARTS.includes(name), `${behaviour}/${name} is offerable`);
+    }
+  }
+});
+
+test('anchor and scope are declared props, not renderer-only conventions', () => {
+  // `renderNode` has always read these off any widget's wrapper while no widget
+  // declared them, so a validator walking a widget schema refused them.
+  assert.ok(UNIVERSAL_PROPS.anchor, 'anchor is stated');
+  assert.ok(UNIVERSAL_PROPS.scope, 'scope is stated');
+  assert.ok(UNIVERSAL_PROPS.behaviour.enum.includes('carousel'));
+  // Empty is a legal value: it is how the inspector says "no behaviour".
+  assert.ok(UNIVERSAL_PROPS.part.enum.includes(''));
+});
+
+test('an image prop interpolated into src renders the image, not an empty tag', () => {
+  // `{{logo}}` inside src="…" is the first thing anyone writing this template
+  // reaches for, the AI included. It used to yield src="" — a broken image with
+  // nothing anywhere explaining why.
+  const out = renderWidgetPreview({
+    id: 'logo-wall',
+    label: 'Logo wall',
+    props: [
+      {
+        key: 'logos',
+        type: 'list',
+        label: 'Logo',
+        fields: [
+          { key: 'image', type: 'image', label: 'Logo' },
+          { key: 'altText', type: 'text', label: 'Alt text' },
+        ],
+      },
+    ],
+    html: '{{#each logos}}<img src="{{image}}" alt="{{altText}}"/>{{/each}}',
+  });
+  assert.doesNotMatch(out.html, /src=""/);
+  assert.equal(out.html.match(/data:image\/svg\+xml/g).length, 3);
+  assert.match(out.html, /alt="Alt text 1"/);
 });

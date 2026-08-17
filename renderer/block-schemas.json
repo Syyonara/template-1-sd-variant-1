@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "4.4.0",
+  "rendererVersion": "4.6.0",
   "documentVersion": 2,
   "gridColumns": 12,
   "tokenGroups": {
@@ -291,6 +291,18 @@
     "form"
   ],
   "customWidgetPropTypes": [
+    "text",
+    "textarea",
+    "richtext",
+    "url",
+    "image",
+    "number",
+    "boolean",
+    "select",
+    "color",
+    "list"
+  ],
+  "componentPropTypes": [
     "text",
     "textarea",
     "richtext",
@@ -854,6 +866,222 @@
     "dependentselect",
     "mapsync"
   ],
+  "behaviourParts": {
+    "carousel": {
+      "track": {
+        "label": "Rail",
+        "hint": "The scrolling strip. Defaults to the node itself.",
+        "optional": true
+      },
+      "slide": {
+        "label": "Slide",
+        "hint": "Each item. Must be a direct child of the rail.",
+        "optional": false,
+        "many": true
+      },
+      "prev": {
+        "label": "Previous button",
+        "optional": true
+      },
+      "next": {
+        "label": "Next button",
+        "optional": true
+      },
+      "dots": {
+        "label": "Dots container",
+        "hint": "Leave it empty — one dot per slide is generated.",
+        "optional": true
+      }
+    },
+    "rotator": {
+      "slide": {
+        "label": "Slide",
+        "optional": false,
+        "many": true
+      },
+      "live": {
+        "label": "Live region",
+        "hint": "Where changes are announced. Defaults to the node.",
+        "optional": true
+      },
+      "prev": {
+        "label": "Previous button",
+        "optional": true
+      },
+      "next": {
+        "label": "Next button",
+        "optional": true
+      },
+      "dots": {
+        "label": "Dots container",
+        "optional": true
+      }
+    },
+    "filter": {
+      "control": {
+        "label": "Filter control",
+        "hint": "A button or input carrying the value to match.",
+        "optional": false,
+        "many": true
+      },
+      "item": {
+        "label": "Filterable item",
+        "optional": false,
+        "many": true
+      },
+      "count": {
+        "label": "Result count",
+        "optional": true
+      },
+      "empty": {
+        "label": "\"No results\" message",
+        "optional": true
+      }
+    },
+    "dropdown": {
+      "trigger": {
+        "label": "Trigger",
+        "optional": false,
+        "many": true
+      },
+      "panel": {
+        "label": "Panel",
+        "optional": false,
+        "many": true
+      }
+    },
+    "drawer": {
+      "toggle": {
+        "label": "Toggle button",
+        "optional": false
+      },
+      "panel": {
+        "label": "Panel",
+        "optional": false
+      },
+      "close": {
+        "label": "Close button",
+        "optional": true,
+        "many": true
+      }
+    },
+    "scrollstate": {
+      "totop": {
+        "label": "Back-to-top button",
+        "optional": true,
+        "many": true
+      }
+    },
+    "dependentselect": {
+      "parent": {
+        "label": "Parent select",
+        "optional": false,
+        "many": true
+      },
+      "child": {
+        "label": "Dependent select",
+        "optional": false,
+        "many": true
+      }
+    },
+    "mapsync": {
+      "frame": {
+        "label": "Map iframe",
+        "hint": "Defaults to the first iframe inside.",
+        "optional": true
+      }
+    }
+  },
+  "behaviourOptions": {
+    "carousel": {
+      "label": "Accessible name for the rail.",
+      "perMove": "Slides advanced per arrow press."
+    },
+    "rotator": {
+      "autoplay": "Milliseconds between slides. Omit to require a click."
+    },
+    "filter": {
+      "match": "How a control value is compared: \"exact\" or \"includes\"."
+    },
+    "dropdown": {
+      "trigger": "\"hover\" or \"click\".",
+      "closeOnOutside": "Close when clicking elsewhere."
+    },
+    "drawer": {
+      "lockScroll": "Freeze the page behind the panel."
+    },
+    "scrollstate": {
+      "after": "Pixels scrolled before the state turns on.",
+      "until": "Selector to stop at."
+    },
+    "dependentselect": {
+      "source": "Name of the option map published on window."
+    },
+    "mapsync": {
+      "message": "Template for the address sent to the map."
+    }
+  },
+  "universalProps": {
+    "anchor": {
+      "type": "string",
+      "description": "An id, so a link can jump to this node. Lower-case, no spaces."
+    },
+    "scope": {
+      "type": "string",
+      "description": "A token set name, to restyle this node and everything inside it."
+    },
+    "repeat": {
+      "type": "string",
+      "description": "Inside a designed component only: the key of a list prop. This node renders once per item, with that item's fields available to {{bindings}} inside it."
+    },
+    "behaviour": {
+      "type": "string",
+      "description": "Client behaviour this node performs. Its parts go on nodes inside.",
+      "enum": [
+        "",
+        "carousel",
+        "filter",
+        "dropdown",
+        "drawer",
+        "rotator",
+        "scrollstate",
+        "dependentselect",
+        "mapsync"
+      ],
+      "default": ""
+    },
+    "behaviourOptions": {
+      "type": "string",
+      "description": "Settings for the behaviour, as a JSON object. Ignored if it does not parse."
+    },
+    "part": {
+      "type": "string",
+      "description": "The role this node plays in the nearest ancestor behaviour.",
+      "enum": [
+        "",
+        "child",
+        "close",
+        "control",
+        "count",
+        "dot",
+        "dots",
+        "empty",
+        "frame",
+        "item",
+        "live",
+        "next",
+        "panel",
+        "parent",
+        "prev",
+        "slide",
+        "toggle",
+        "totop",
+        "track",
+        "trigger"
+      ],
+      "default": ""
+    }
+  },
   "layout": [
     {
       "id": "section",
@@ -919,6 +1147,53 @@
               "end"
             ],
             "default": "start"
+          },
+          "behaviour": {
+            "type": "string",
+            "description": "Client behaviour this node performs. Its parts go on nodes inside.",
+            "enum": [
+              "",
+              "carousel",
+              "filter",
+              "dropdown",
+              "drawer",
+              "rotator",
+              "scrollstate",
+              "dependentselect",
+              "mapsync"
+            ],
+            "default": ""
+          },
+          "behaviourOptions": {
+            "type": "string",
+            "description": "Settings for the behaviour, as a JSON object. Ignored if it does not parse."
+          },
+          "part": {
+            "type": "string",
+            "description": "The role this node plays in the nearest ancestor behaviour.",
+            "enum": [
+              "",
+              "child",
+              "close",
+              "control",
+              "count",
+              "dot",
+              "dots",
+              "empty",
+              "frame",
+              "item",
+              "live",
+              "next",
+              "panel",
+              "parent",
+              "prev",
+              "slide",
+              "toggle",
+              "totop",
+              "track",
+              "trigger"
+            ],
+            "default": ""
           }
         }
       }
@@ -965,6 +1240,53 @@
           "reverseStacked": {
             "type": "boolean",
             "description": "When stacked, show the columns in reverse order."
+          },
+          "behaviour": {
+            "type": "string",
+            "description": "Client behaviour this node performs. Its parts go on nodes inside.",
+            "enum": [
+              "",
+              "carousel",
+              "filter",
+              "dropdown",
+              "drawer",
+              "rotator",
+              "scrollstate",
+              "dependentselect",
+              "mapsync"
+            ],
+            "default": ""
+          },
+          "behaviourOptions": {
+            "type": "string",
+            "description": "Settings for the behaviour, as a JSON object. Ignored if it does not parse."
+          },
+          "part": {
+            "type": "string",
+            "description": "The role this node plays in the nearest ancestor behaviour.",
+            "enum": [
+              "",
+              "child",
+              "close",
+              "control",
+              "count",
+              "dot",
+              "dots",
+              "empty",
+              "frame",
+              "item",
+              "live",
+              "next",
+              "panel",
+              "parent",
+              "prev",
+              "slide",
+              "toggle",
+              "totop",
+              "track",
+              "trigger"
+            ],
+            "default": ""
           }
         }
       }
@@ -1017,6 +1339,53 @@
               "accent"
             ],
             "default": "none"
+          },
+          "behaviour": {
+            "type": "string",
+            "description": "Client behaviour this node performs. Its parts go on nodes inside.",
+            "enum": [
+              "",
+              "carousel",
+              "filter",
+              "dropdown",
+              "drawer",
+              "rotator",
+              "scrollstate",
+              "dependentselect",
+              "mapsync"
+            ],
+            "default": ""
+          },
+          "behaviourOptions": {
+            "type": "string",
+            "description": "Settings for the behaviour, as a JSON object. Ignored if it does not parse."
+          },
+          "part": {
+            "type": "string",
+            "description": "The role this node plays in the nearest ancestor behaviour.",
+            "enum": [
+              "",
+              "child",
+              "close",
+              "control",
+              "count",
+              "dot",
+              "dots",
+              "empty",
+              "frame",
+              "item",
+              "live",
+              "next",
+              "panel",
+              "parent",
+              "prev",
+              "slide",
+              "toggle",
+              "totop",
+              "track",
+              "trigger"
+            ],
+            "default": ""
           }
         }
       }
@@ -1037,6 +1406,29 @@
           }
         }
       }
+    },
+    {
+      "id": "sharedSection",
+      "label": "Shared section",
+      "category": "layout",
+      "accepts": [],
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "string",
+            "description": "Which shared section to place, by id."
+          },
+          "values": {
+            "type": "object",
+            "description": "Content for this placement, keyed by the component's declared prop keys. Anything left out falls back to the prop's default, so a placement need only state what differs."
+          }
+        },
+        "required": [
+          "sectionId"
+        ]
+      }
     }
   ],
   "nesting": {
@@ -1045,7 +1437,8 @@
         "section",
         "row",
         "contentArea",
-        "widget"
+        "widget",
+        "sharedSection"
       ]
     },
     "section": {
@@ -1066,6 +1459,9 @@
       ]
     },
     "contentArea": {
+      "accepts": []
+    },
+    "sharedSection": {
       "accepts": []
     }
   },

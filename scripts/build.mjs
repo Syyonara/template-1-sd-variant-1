@@ -112,6 +112,59 @@ const customWidgetDefs = (() => {
 const registeredWidgets = registerCustomWidgets(customWidgetDefs, warn);
 const customCss = customWidgetCss();
 
+/* ---------------------------------------------------------- shared sections */
+// One tree, stored once, placed on many pages. A `sharedSection` node names one
+// of these and expands it where it sits, so the published HTML carries the real
+// markup — the reuse is resolved here, at build time, and costs the visitor
+// nothing.
+
+const sections = loadById(join(SITE, 'sections'));
+
+/**
+ * The CSS and JS belonging to every component a tree places, transitively.
+ *
+ * A component's own stylesheet and script travel with it rather than loading on
+ * every page: a dealer with a dozen components should not ship all twelve to a
+ * page that uses one. Following nesting matters because a component may place
+ * another, and the inner one's styles are just as necessary.
+ *
+ * Emitting the script file is done here, on first use, so a component nobody
+ * places produces no output at all.
+ */
+const componentScriptsWritten = new Set();
+function componentAssets(nodeLists) {
+  const seen = new Set();
+  const css = [];
+  const scripts = [];
+
+  const walk = nodes => {
+    for (const node of Array.isArray(nodes) ? nodes : []) {
+      if (!node || typeof node !== 'object') continue;
+      if (node.type === 'sharedSection') {
+        const id = String(node.props?.sectionId || '').trim();
+        const section = id ? sections[id] : null;
+        if (section && !seen.has(id)) {
+          seen.add(id);
+          if (section.css) css.push(section.css);
+          if (section.js && String(section.js).trim()) {
+            const url = `/scripts/components/${id}.js`;
+            if (!componentScriptsWritten.has(id)) {
+              componentScriptsWritten.add(id);
+              write(`scripts/components/${id}.js`, section.js);
+            }
+            scripts.push(url);
+          }
+          walk(parseDocument(section).nodes);
+        }
+      }
+      walk(node.children);
+    }
+  };
+
+  for (const list of nodeLists) walk(list);
+  return { css: css.join('\n'), scripts };
+}
+
 /* ------------------------------------------------------------------- tokens */
 
 // Self-hosted @font-face rules lead the design system stylesheet, so a family is
@@ -150,6 +203,7 @@ const renderCtx = {
   forms,
   buttons,
   menus,
+  sections,
   // Menu items point at a page by slug rather than by address, so the manifest
   // has to be in context for a link to resolve.
   pages,
@@ -174,6 +228,18 @@ const templates = parseTemplates(
     : {},
 );
 
+/** A template's own script, written once and linked by every page it wraps. */
+const templateScriptsWritten = new Set();
+function templateScript(template) {
+  const js = template?.js;
+  if (!template || !js || !String(js).trim()) return [];
+  if (!templateScriptsWritten.has(template.id)) {
+    templateScriptsWritten.add(template.id);
+    write(`scripts/templates/${template.id}.js`, js);
+  }
+  return [`/scripts/templates/${template.id}.js`];
+}
+
 /**
  * Render one page inside the template that claims it.
  *
@@ -190,26 +256,37 @@ function renderWithTemplate(target, nodes) {
   // compiled into one block the shell appends after the component stylesheet —
   // plus the template's own custom CSS, which follows the template to every
   // page that uses it.
+  const assets = componentAssets([resolved.template?.nodes ?? [], nodes]);
   const styles = [
     compileNodeStyles([...(resolved.template?.nodes ?? []), ...nodes]),
     resolved.template?.css || '',
+    assets.css,
   ]
     .filter(Boolean)
     .join('\n');
+  const scripts = [...templateScript(resolved.template), ...assets.scripts];
   if (!resolved.template) {
-    return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', styles, resolved };
+    return { header: '', body: renderDocument({ nodes }, renderCtx), footer: '', styles, scripts, resolved };
   }
 
   const { before, after, found } = splitAtContentArea(resolved.template.nodes);
   if (!found) {
     const composed = composeDocument(resolved.template.nodes, nodes, { warn });
-    return { header: '', body: renderDocument({ nodes: composed }, renderCtx), footer: '', styles, resolved };
+    return {
+      header: '',
+      body: renderDocument({ nodes: composed }, renderCtx),
+      footer: '',
+      styles,
+      scripts,
+      resolved,
+    };
   }
   return {
     header: renderDocument({ nodes: before }, renderCtx),
     body: renderDocument({ nodes }, renderCtx),
     footer: renderDocument({ nodes: after }, renderCtx),
     styles,
+    scripts,
     resolved,
   };
 }
@@ -340,7 +417,7 @@ for (const p of pages) {
       canonical: config.url + p.path,
       bodyHtml: rendered.body,
       pageCss: [css, rendered.styles].filter(Boolean).join('\n'),
-      pageJs,
+      pageJs: [...(rendered.scripts ?? []), ...(pageJs ? [pageJs] : [])],
       ogImage: p.seo && p.seo.ogImage,
       noindex,
       tokenScopes: p.tokenScope ? [p.tokenScope] : [],
@@ -428,7 +505,7 @@ if (existsSync(join(BLOG, 'posts'))) {
           canonical: `${config.url}${base}/${post.slug}`,
           bodyHtml: `<article>${masthead}${rendered.body}</article>`,
           pageCss: [rendered.styles, post.css || ''].filter(Boolean).join('\n'),
-          pageJs: postJs,
+          pageJs: [...(rendered.scripts ?? []), ...(postJs ? [postJs] : [])],
           ogImage: post.coverImage,
           noindex: false,
         }),
