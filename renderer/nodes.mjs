@@ -356,7 +356,7 @@ export const LAYOUT_REGISTRY = {
       }
 
       return `<div${attrs({
-        class: 'bz-sharedsection',
+        class: `bz-sharedsection bz-section-${id}`,
         'data-bz-node': node.id || null,
         'data-bz-type': 'sharedSection',
         'data-bz-section': id,

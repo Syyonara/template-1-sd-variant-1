@@ -827,6 +827,7 @@ test('a shared section expands to its own tree where it sits', () => {
   );
   // The real markup, not a reference the visitor has to resolve.
   assert.match(html, /data-bz-section="cta-band"/);
+  assert.match(html, /bz-section-cta-band/, 'scoped CSS has a class to hang on');
   assert.match(html, /bz-section--bg-accent/);
   assert.match(html, /Talk to us/);
 });
