@@ -5,7 +5,7 @@
       "id": "hero",
       "type": "section",
       "props": {
-        "width": "boxed",
+        "width": "full",
         "paddingY": 0,
         "background": "ink",
         "anchor": "hero"
@@ -16,41 +16,147 @@
           "backgroundImage": "/images/sunset-highway.jpg",
           "backgroundSize": "cover",
           "backgroundPosition": "center",
-          "backgroundRepeat": "no-repeat"
+          "backgroundRepeat": "no-repeat",
+          "minHeight": 680,
+          "display": "flex",
+          "alignItems": "center"
+        },
+        "tablet": {
+          "minHeight": 620
+        },
+        "mobile": {
+          "minHeight": 560
         }
       },
       "children": [
         {
-          "id": "hero-main",
-          "type": "hero",
+          "id": "hero-row",
+          "type": "row",
           "props": {
-            "eyebrow": "New & Used Commercial Trucks",
-            "headline": "Built for the Job. Ready for the Road.",
-            "subhead": "Shop medium and heavy-duty trucks, schedule certified service, and keep your fleet moving — all in one place.",
-            "headingLevel": 1,
-            "showSearch": true
+            "gap": 0,
+            "stackOn": "never"
           },
           "styles": {
             "base": {
-              "minHeight": 680,
-              "display": "flex",
-              "flexDirection": "column",
-              "justifyContent": "center",
-              "paddingTop": 160,
+              "maxWidth": 1440,
+              "marginLeft": "auto",
+              "marginRight": "auto",
+              "width": "100%",
+              "paddingTop": 202,
               "paddingBottom": 120,
-              "background": "#1a1714@62%"
-            },
-            "tablet": {
-              "minHeight": 620,
-              "paddingTop": 180,
-              "paddingBottom": 96
+              "paddingLeft": 24,
+              "paddingRight": 24
             },
             "mobile": {
-              "minHeight": 560,
-              "paddingTop": 200,
+              "paddingLeft": 20,
+              "paddingRight": 20,
+              "paddingTop": 140,
               "paddingBottom": 80
+            },
+            "tablet": {
+              "paddingTop": 150,
+              "paddingBottom": 96
             }
-          }
+          },
+          "children": [
+            {
+              "id": "hero-copy",
+              "type": "column",
+              "props": {
+                "span": 12
+              },
+              "styles": {
+                "base": {
+                  "maxWidth": 620
+                }
+              },
+              "children": [
+                {
+                  "id": "hero-eyebrow",
+                  "type": "text",
+                  "props": {
+                    "text": "New & Used Commercial Trucks",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "display": "inline-block",
+                      "background": "#e8531f",
+                      "radius": 7,
+                      "paddingTop": 6,
+                      "paddingBottom": 6,
+                      "paddingLeft": 12,
+                      "paddingRight": 12,
+                      "textColor": "#1a1714",
+                      "fontSize": 13,
+                      "fontWeight": "700",
+                      "letterSpacing": "0.06em",
+                      "textTransform": "uppercase",
+                      "marginBottom": 20,
+                      "lineHeight": "1.2"
+                    }
+                  }
+                },
+                {
+                  "id": "hero-h",
+                  "type": "heading",
+                  "props": {
+                    "text": "Built for the Job. Ready for the Road.",
+                    "headingLevel": 1
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "#ffffff",
+                      "fontSize": 52,
+                      "lineHeight": "1.05",
+                      "marginBottom": 18,
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    },
+                    "mobile": {
+                      "fontSize": 36
+                    }
+                  }
+                },
+                {
+                  "id": "hero-sub",
+                  "type": "text",
+                  "props": {
+                    "text": "Shop medium and heavy-duty trucks, schedule certified service, and keep your fleet moving \u2014 all in one place.",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "#ede9e0",
+                      "fontSize": 18,
+                      "lineHeight": "1.6",
+                      "maxWidth": 520,
+                      "marginBottom": 32,
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "hero-search",
+                  "type": "widget",
+                  "props": {
+                    "widget": "inventory-search",
+                    "config": {
+                      "placeholder": "Search by stock #, model, or VIN"
+                    }
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 480,
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -103,7 +209,7 @@
                   "flexDirection": "column",
                   "alignItems": "center",
                   "justifyContent": "center",
-                  "gap": 10,
+                  "gap": 3,
                   "paddingTop": 26,
                   "paddingBottom": 26,
                   "paddingLeft": 12,
@@ -132,7 +238,8 @@
                       "paddingTop": 0,
                       "paddingBottom": 0,
                       "marginLeft": "auto",
-                      "marginRight": "auto"
+                      "marginRight": "auto",
+                      "marginBottom": 0
                     }
                   }
                 },
@@ -150,7 +257,8 @@
                       "paddingBottom": 0,
                       "fontSize": 14,
                       "fontWeight": "600",
-                      "textColor": "ink"
+                      "textColor": "ink",
+                      "marginBottom": 0
                     }
                   }
                 }
@@ -168,7 +276,7 @@
                   "flexDirection": "column",
                   "alignItems": "center",
                   "justifyContent": "center",
-                  "gap": 10,
+                  "gap": 3,
                   "paddingTop": 26,
                   "paddingBottom": 26,
                   "paddingLeft": 12,
@@ -197,7 +305,8 @@
                       "paddingTop": 0,
                       "paddingBottom": 0,
                       "marginLeft": "auto",
-                      "marginRight": "auto"
+                      "marginRight": "auto",
+                      "marginBottom": 0
                     }
                   }
                 },
@@ -215,7 +324,8 @@
                       "paddingBottom": 0,
                       "fontSize": 14,
                       "fontWeight": "600",
-                      "textColor": "ink"
+                      "textColor": "ink",
+                      "marginBottom": 0
                     }
                   }
                 }
@@ -233,7 +343,7 @@
                   "flexDirection": "column",
                   "alignItems": "center",
                   "justifyContent": "center",
-                  "gap": 10,
+                  "gap": 3,
                   "paddingTop": 26,
                   "paddingBottom": 26,
                   "paddingLeft": 12,
@@ -262,7 +372,8 @@
                       "paddingTop": 0,
                       "paddingBottom": 0,
                       "marginLeft": "auto",
-                      "marginRight": "auto"
+                      "marginRight": "auto",
+                      "marginBottom": 0
                     }
                   }
                 },
@@ -280,7 +391,8 @@
                       "paddingBottom": 0,
                       "fontSize": 14,
                       "fontWeight": "600",
-                      "textColor": "ink"
+                      "textColor": "ink",
+                      "marginBottom": 0
                     }
                   }
                 }
@@ -298,7 +410,7 @@
                   "flexDirection": "column",
                   "alignItems": "center",
                   "justifyContent": "center",
-                  "gap": 10,
+                  "gap": 3,
                   "paddingTop": 26,
                   "paddingBottom": 26,
                   "paddingLeft": 12,
@@ -327,7 +439,8 @@
                       "paddingTop": 0,
                       "paddingBottom": 0,
                       "marginLeft": "auto",
-                      "marginRight": "auto"
+                      "marginRight": "auto",
+                      "marginBottom": 0
                     }
                   }
                 },
@@ -345,7 +458,8 @@
                       "paddingBottom": 0,
                       "fontSize": 14,
                       "fontWeight": "600",
-                      "textColor": "ink"
+                      "textColor": "ink",
+                      "marginBottom": 0
                     }
                   }
                 }
@@ -363,7 +477,7 @@
                   "flexDirection": "column",
                   "alignItems": "center",
                   "justifyContent": "center",
-                  "gap": 10,
+                  "gap": 3,
                   "paddingTop": 26,
                   "paddingBottom": 26,
                   "paddingLeft": 12,
@@ -392,7 +506,8 @@
                       "paddingTop": 0,
                       "paddingBottom": 0,
                       "marginLeft": "auto",
-                      "marginRight": "auto"
+                      "marginRight": "auto",
+                      "marginBottom": 0
                     }
                   }
                 },
@@ -410,7 +525,8 @@
                       "paddingBottom": 0,
                       "fontSize": 14,
                       "fontWeight": "600",
-                      "textColor": "ink"
+                      "textColor": "ink",
+                      "marginBottom": 0
                     }
                   }
                 }
@@ -1302,7 +1418,7 @@
                   "id": "quote-1-body",
                   "type": "text",
                   "props": {
-                    "text": "“They kept three of our trucks down for less than 48 hours combined all year. That's the difference a good service team makes.”",
+                    "text": "\u201cThey kept three of our trucks down for less than 48 hours combined all year. That's the difference a good service team makes.\u201d",
                     "align": "center",
                     "width": "full"
                   },
@@ -1358,7 +1474,7 @@
                   "id": "quote-2-body",
                   "type": "text",
                   "props": {
-                    "text": "“Financing was straightforward and the team walked us through every option for our first Class 8 purchase.”",
+                    "text": "\u201cFinancing was straightforward and the team walked us through every option for our first Class 8 purchase.\u201d",
                     "align": "center",
                     "width": "full"
                   },
@@ -1414,7 +1530,7 @@
                   "id": "quote-3-body",
                   "type": "text",
                   "props": {
-                    "text": "“Parts counter always has what we need in stock, or it ships next day. Huge for uptime.”",
+                    "text": "\u201cParts counter always has what we need in stock, or it ships next day. Huge for uptime.\u201d",
                     "align": "center",
                     "width": "full"
                   },

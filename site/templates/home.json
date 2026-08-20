@@ -170,7 +170,15 @@
                     }
                   }
                 }
-              ]
+              ],
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": 2
+                }
+              }
             },
             {
               "id": "masthead-nav",
@@ -197,15 +205,55 @@
                       "fontWeight": "700",
                       "fontSize": 13,
                       "letterSpacing": "0.01em",
+                      "paddingTop": 4,
+                      "paddingBottom": 4,
+                      "background": "#1a1714@70%",
+                      "radius": 10,
+                      "paddingLeft": 8,
+                      "paddingRight": 8
+                    },
+                    "tablet": {
+                      "textColor": "ink",
+                      "background": "#00000000",
+                      "paddingLeft": 0,
+                      "paddingRight": 0
+                    }
+                  }
+                },
+                {
+                  "id": "nav-search",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "label": "Search inventory",
+                        "url": "/store",
+                        "style": "link",
+                        "intent": "inventory-search"
+                      }
+                    ]
+                  },
+                  "styles": {
+                    "base": {
+                      "marginLeft": 4,
                       "paddingTop": 0,
                       "paddingBottom": 0
                     },
                     "tablet": {
-                      "textColor": "ink"
+                      "hide": true
                     }
                   }
                 }
-              ]
+              ],
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "justifyContent": "flex-end",
+                  "gap": 1
+                }
+              }
             }
           ]
         }
