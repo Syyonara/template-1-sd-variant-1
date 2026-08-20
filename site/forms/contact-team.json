@@ -1,0 +1,51 @@
+{
+  "id": "contact-team",
+  "name": "Send us a message",
+  "status": "live",
+  "system": false,
+  "surfaces": [
+    "page"
+  ],
+  "intent": "contact",
+  "submitLabel": "Send Message",
+  "successMessage": "Thanks — we'll respond within one business day.",
+  "consent": {
+    "enabled": true,
+    "required": true,
+    "text": "I agree to be contacted about this enquiry by phone, text or email."
+  },
+  "fields": [
+    {
+      "id": "ct-name",
+      "type": "full_name",
+      "label": "Full name",
+      "placeholder": "Full name",
+      "required": true
+    },
+    {
+      "id": "ct-email",
+      "type": "email",
+      "label": "Email address",
+      "placeholder": "Email address",
+      "required": true
+    },
+    {
+      "id": "ct-message",
+      "type": "paragraph",
+      "label": "How can we help?",
+      "placeholder": "How can we help?",
+      "required": true
+    }
+  ],
+  "notifications": [
+    {
+      "id": "ct-sales",
+      "name": "General enquiries",
+      "logic": "AND",
+      "rules": [],
+      "targetType": "role",
+      "roleId": "salesperson",
+      "scopeMode": "dynamic"
+    }
+  ]
+}

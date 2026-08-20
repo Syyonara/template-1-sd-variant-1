@@ -1,108 +1,1748 @@
 {
-  "version": 1,
-  "blocks": [
+  "version": 2,
+  "nodes": [
     {
       "id": "hero",
-      "type": "hero",
+      "type": "section",
       "props": {
-        "headingLevel": 1,
-        "eyebrow": "Trucks · Parts · Service",
-        "headline": "Your trusted partner on the road.",
-        "subhead": "New and used trucks, expert service, and genuine parts — all from one dealer you can rely on.",
-        "showSearch": true,
-        "ctas": [{ "ctaId": "browse-inventory" }, { "ctaId": "request-quote", "style": "secondary" }]
-      }
+        "width": "boxed",
+        "paddingY": 0,
+        "background": "ink",
+        "anchor": "hero"
+      },
+      "styles": {
+        "base": {
+          "overflow": "hidden",
+          "backgroundImage": "/images/sunset-highway.jpg",
+          "backgroundSize": "cover",
+          "backgroundPosition": "center",
+          "backgroundRepeat": "no-repeat"
+        }
+      },
+      "children": [
+        {
+          "id": "hero-main",
+          "type": "hero",
+          "props": {
+            "eyebrow": "New & Used Commercial Trucks",
+            "headline": "Built for the Job. Ready for the Road.",
+            "subhead": "Shop medium and heavy-duty trucks, schedule certified service, and keep your fleet moving — all in one place.",
+            "headingLevel": 1,
+            "showSearch": true
+          },
+          "styles": {
+            "base": {
+              "minHeight": 680,
+              "display": "flex",
+              "flexDirection": "column",
+              "justifyContent": "center",
+              "paddingTop": 160,
+              "paddingBottom": 120,
+              "background": "#1a1714@62%"
+            },
+            "tablet": {
+              "minHeight": 620,
+              "paddingTop": 180,
+              "paddingBottom": 96
+            },
+            "mobile": {
+              "minHeight": 560,
+              "paddingTop": 200,
+              "paddingBottom": 80
+            }
+          }
+        }
+      ]
     },
     {
       "id": "quick",
-      "type": "iconGrid",
+      "type": "section",
       "props": {
-        "heading": "How can we help?",
-        "items": [
-          {
-            "label": "In-stock inventory",
-            "desc": "New and used trucks and trailers, priced and ready to move.",
-            "url": "/store"
+        "width": "boxed",
+        "paddingY": 0,
+        "background": "none"
+      },
+      "styles": {
+        "base": {
+          "position": "relative",
+          "zIndex": 2
+        }
+      },
+      "children": [
+        {
+          "id": "quick-card",
+          "type": "row",
+          "props": {
+            "gap": 0,
+            "align": "stretch",
+            "stackOn": "mobile"
           },
-          {
-            "label": "Parts counter",
-            "desc": "OEM and aftermarket parts, shipped or ready at the counter.",
-            "url": "/store"
+          "styles": {
+            "base": {
+              "gridColumns": "1fr 1fr 1fr 1fr 1fr",
+              "marginTop": -56,
+              "background": "card",
+              "radius": 16,
+              "shadow": "lg",
+              "overflow": "hidden"
+            },
+            "mobile": {
+              "marginTop": -32
+            }
           },
-          {
-            "label": "Service & repair",
-            "desc": "Factory-trained technicians for inspections, warranty and repair.",
-            "url": "/contact"
+          "children": [
+            {
+              "id": "quick-sleepers",
+              "type": "column",
+              "props": {
+                "span": 1
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 10,
+                  "paddingTop": 26,
+                  "paddingBottom": 26,
+                  "paddingLeft": 12,
+                  "paddingRight": 12,
+                  "borderRightWidth": 1,
+                  "borderColor": "line",
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "quick-sleepers-icon",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/icons/sleepers.svg",
+                      "alt": "Sleeper cab truck",
+                      "width": 44,
+                      "height": 44
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 44,
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "marginLeft": "auto",
+                      "marginRight": "auto"
+                    }
+                  }
+                },
+                {
+                  "id": "quick-sleepers-label",
+                  "type": "text",
+                  "props": {
+                    "text": "<a href=\"/store?body=sleeper\">Sleepers</a>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "fontSize": 14,
+                      "fontWeight": "600",
+                      "textColor": "ink"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quick-dump-trucks",
+              "type": "column",
+              "props": {
+                "span": 1
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 10,
+                  "paddingTop": 26,
+                  "paddingBottom": 26,
+                  "paddingLeft": 12,
+                  "paddingRight": 12,
+                  "borderRightWidth": 1,
+                  "borderColor": "line",
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "quick-dump-trucks-icon",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/icons/dump-trucks.svg",
+                      "alt": "Dump truck",
+                      "width": 44,
+                      "height": 44
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 44,
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "marginLeft": "auto",
+                      "marginRight": "auto"
+                    }
+                  }
+                },
+                {
+                  "id": "quick-dump-trucks-label",
+                  "type": "text",
+                  "props": {
+                    "text": "<a href=\"/store?body=dump\">Dump Trucks</a>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "fontSize": 14,
+                      "fontWeight": "600",
+                      "textColor": "ink"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quick-day-cabs",
+              "type": "column",
+              "props": {
+                "span": 1
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 10,
+                  "paddingTop": 26,
+                  "paddingBottom": 26,
+                  "paddingLeft": 12,
+                  "paddingRight": 12,
+                  "borderRightWidth": 1,
+                  "borderColor": "line",
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "quick-day-cabs-icon",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/icons/day-cabs.svg",
+                      "alt": "Day cab truck",
+                      "width": 44,
+                      "height": 44
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 44,
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "marginLeft": "auto",
+                      "marginRight": "auto"
+                    }
+                  }
+                },
+                {
+                  "id": "quick-day-cabs-label",
+                  "type": "text",
+                  "props": {
+                    "text": "<a href=\"/store?body=day-cab\">Day Cabs</a>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "fontSize": 14,
+                      "fontWeight": "600",
+                      "textColor": "ink"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quick-cab-chassis",
+              "type": "column",
+              "props": {
+                "span": 1
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 10,
+                  "paddingTop": 26,
+                  "paddingBottom": 26,
+                  "paddingLeft": 12,
+                  "paddingRight": 12,
+                  "borderRightWidth": 1,
+                  "borderColor": "line",
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "quick-cab-chassis-icon",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/icons/cab-chassis.svg",
+                      "alt": "Cab and chassis truck",
+                      "width": 44,
+                      "height": 44
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 44,
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "marginLeft": "auto",
+                      "marginRight": "auto"
+                    }
+                  }
+                },
+                {
+                  "id": "quick-cab-chassis-label",
+                  "type": "text",
+                  "props": {
+                    "text": "<a href=\"/store?body=cab-chassis\">Cab & Chassis</a>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "fontSize": 14,
+                      "fontWeight": "600",
+                      "textColor": "ink"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quick-medium-duty",
+              "type": "column",
+              "props": {
+                "span": 1
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 10,
+                  "paddingTop": 26,
+                  "paddingBottom": 26,
+                  "paddingLeft": 12,
+                  "paddingRight": 12,
+                  "borderRightWidth": 1,
+                  "borderColor": "line",
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "quick-medium-duty-icon",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/icons/medium-duty.svg",
+                      "alt": "Medium duty truck",
+                      "width": 44,
+                      "height": 44
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "maxWidth": 44,
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "marginLeft": "auto",
+                      "marginRight": "auto"
+                    }
+                  }
+                },
+                {
+                  "id": "quick-medium-duty-label",
+                  "type": "text",
+                  "props": {
+                    "text": "<a href=\"/store?class=medium-duty\">Medium Duty</a>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0,
+                      "fontSize": 14,
+                      "fontWeight": "600",
+                      "textColor": "ink"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brands",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 10,
+        "background": "none",
+        "anchor": "brands",
+        "behaviour": "carousel",
+        "behaviourOptions": "{\"perMove\":1,\"label\":\"Brands we carry\"}"
+      },
+      "children": [
+        {
+          "id": "brands-head",
+          "type": "row",
+          "props": {
+            "gap": 4
           },
-          {
-            "label": "Financing",
-            "desc": "Flexible terms for owner-operators, with fast pre-approval.",
-            "url": "/contact"
+          "children": [
+            {
+              "id": "brands-head-col",
+              "type": "column",
+              "props": {
+                "span": 12
+              },
+              "children": [
+                {
+                  "id": "brands-title",
+                  "type": "heading",
+                  "props": {
+                    "text": "Choose a Brand to Explore",
+                    "headingLevel": 2,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "fontSize": 34,
+                      "paddingBottom": 32
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "brands-rail",
+          "type": "row",
+          "props": {
+            "gap": 5,
+            "align": "stretch",
+            "part": "track"
+          },
+          "children": [
+            {
+              "id": "brand-atlas",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "part": "slide"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 12,
+                  "aspectRatio": "1/1",
+                  "background": "#ede7da",
+                  "radius": 14,
+                  "overflow": "hidden",
+                  "paddingLeft": 24,
+                  "paddingRight": 24,
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "brand-atlas-name",
+                  "type": "heading",
+                  "props": {
+                    "text": "Atlas Heavy Trucks",
+                    "headingLevel": 3,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "brand-atlas-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "explore-brand",
+                        "url": "/store?make=atlas-heavy-trucks"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "brand-summit",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "part": "slide"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 12,
+                  "aspectRatio": "1/1",
+                  "background": "#ede7da",
+                  "radius": 14,
+                  "overflow": "hidden",
+                  "paddingLeft": 24,
+                  "paddingRight": 24,
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "brand-summit-name",
+                  "type": "heading",
+                  "props": {
+                    "text": "Summit Motor Works",
+                    "headingLevel": 3,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "brand-summit-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "explore-brand",
+                        "url": "/store?make=summit-motor-works"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "brand-vantage",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "part": "slide"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 12,
+                  "aspectRatio": "1/1",
+                  "background": "#ede7da",
+                  "radius": 14,
+                  "overflow": "hidden",
+                  "paddingLeft": 24,
+                  "paddingRight": 24,
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "brand-vantage-name",
+                  "type": "heading",
+                  "props": {
+                    "text": "Vantage Fleet Co.",
+                    "headingLevel": 3,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "brand-vantage-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "explore-brand",
+                        "url": "/store?make=vantage-fleet-co"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "brand-ridgeline",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "part": "slide"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 12,
+                  "aspectRatio": "1/1",
+                  "background": "#ede7da",
+                  "radius": 14,
+                  "overflow": "hidden",
+                  "paddingLeft": 24,
+                  "paddingRight": 24,
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "brand-ridgeline-name",
+                  "type": "heading",
+                  "props": {
+                    "text": "Ridgeline Trucks",
+                    "headingLevel": 3,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "brand-ridgeline-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "explore-brand",
+                        "url": "/store?make=ridgeline-trucks"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "brand-northbound",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "part": "slide"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "column",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 12,
+                  "aspectRatio": "1/1",
+                  "background": "#ede7da",
+                  "radius": 14,
+                  "overflow": "hidden",
+                  "paddingLeft": 24,
+                  "paddingRight": 24,
+                  "textAlign": "center"
+                }
+              },
+              "children": [
+                {
+                  "id": "brand-northbound-name",
+                  "type": "heading",
+                  "props": {
+                    "text": "Northbound Rigs",
+                    "headingLevel": 3,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "textTransform": "uppercase",
+                      "letterSpacing": "0.02em",
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "brand-northbound-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "explore-brand",
+                        "url": "/store?make=northbound-rigs"
+                      }
+                    ],
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0,
+                      "paddingBottom": 0
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "brands-controls",
+          "type": "row",
+          "props": {
+            "gap": 3,
+            "align": "center"
+          },
+          "styles": {
+            "base": {
+              "paddingTop": 24
+            }
+          },
+          "children": [
+            {
+              "id": "brands-prev-col",
+              "type": "column",
+              "props": {
+                "span": 5,
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "brands-prev",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "label": "Previous brand",
+                        "url": "#brands",
+                        "style": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "part": "prev"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "brands-dots",
+              "type": "column",
+              "props": {
+                "span": 2,
+                "align": "center",
+                "part": "dots"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 8
+                }
+              },
+              "children": []
+            },
+            {
+              "id": "brands-next-col",
+              "type": "column",
+              "props": {
+                "span": 5,
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "brands-next",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "label": "Next brand",
+                        "url": "#brands",
+                        "style": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "part": "next"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "styles": {
+        "base": {
+          "paddingTop": 130,
+          "paddingBottom": 60
+        },
+        "mobile": {
+          "paddingTop": 96,
+          "paddingBottom": 40
+        }
+      }
+    },
+    {
+      "id": "inventory",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 9,
+        "background": "none",
+        "anchor": "inventory"
+      },
+      "children": [
+        {
+          "id": "inventory-head",
+          "type": "row",
+          "props": {
+            "gap": 5
+          },
+          "children": [
+            {
+              "id": "inventory-head-col",
+              "type": "column",
+              "props": {
+                "span": 12
+              },
+              "children": [
+                {
+                  "id": "inventory-title",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Inventory",
+                    "text": "Featured Listings",
+                    "headingLevel": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "inventory-grid",
+          "type": "widget",
+          "props": {
+            "widget": "inventory-carousel",
+            "config": {
+              "limit": 4
+            }
           }
-        ]
+        }
+      ],
+      "styles": {
+        "base": {
+          "paddingTop": 40
+        }
       }
     },
     {
-      "id": "featured",
-      "type": "widget",
+      "id": "stats",
+      "type": "section",
       "props": {
-        "widget": "inventory-carousel",
-        "config": { "heading": "Featured inventory", "limit": 4 }
-      }
+        "width": "boxed",
+        "paddingY": 8,
+        "background": "ink",
+        "anchor": "stats"
+      },
+      "children": [
+        {
+          "id": "stats-band",
+          "type": "statBand",
+          "props": {
+            "heading": "Your Trusted Partner for Every Mile",
+            "body": "Six locations across Texas, Mississippi and Oklahoma, one service standard. Every truck we sell is inspected in our own shop by the technicians who will look after it afterwards.",
+            "headingLevel": 2,
+            "ctas": [
+              {
+                "ctaId": "about-us"
+              }
+            ],
+            "stats": [
+              {
+                "value": "30+",
+                "label": "Years in Business"
+              },
+              {
+                "value": "1,200+",
+                "label": "Trucks Delivered"
+              },
+              {
+                "value": "98%",
+                "label": "Same-Week Service"
+              },
+              {
+                "value": "6",
+                "label": "Dealership Locations"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
-      "id": "band",
-      "type": "statBand",
+      "id": "service",
+      "type": "section",
       "props": {
-        "heading": "Keeping your fleet on the road",
-        "body": "Every unit we sell is inspected in our own shop. When you buy from us you get a direct line to the people who worked on it.",
-        "ctas": [{ "ctaId": "about-us" }],
-        "stats": [
-          { "value": "39", "label": "Years in business" },
-          { "value": "12k+", "label": "Units delivered" },
-          { "value": "4", "label": "Sales & service centers" },
-          { "value": "48hr", "label": "Avg. parts turnaround" }
-        ]
-      }
+        "width": "boxed",
+        "paddingY": 10,
+        "background": "none",
+        "anchor": "service"
+      },
+      "children": [
+        {
+          "id": "service-row",
+          "type": "row",
+          "props": {
+            "gap": 7,
+            "align": "start",
+            "stackOn": "tablet"
+          },
+          "children": [
+            {
+              "id": "service-col",
+              "type": "column",
+              "props": {
+                "span": 6
+              },
+              "children": [
+                {
+                  "id": "service-img",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/images/driver-cab.jpg",
+                      "alt": "A technician working on a truck engine",
+                      "width": 1200,
+                      "height": 800
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "aspectRatio": "16/9",
+                      "overflow": "hidden",
+                      "radius": 16,
+                      "marginBottom": 24
+                    }
+                  }
+                },
+                {
+                  "id": "service-h",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Service Center",
+                    "text": "Certified Maintenance & Repair",
+                    "headingLevel": 2
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 28
+                    }
+                  }
+                },
+                {
+                  "id": "service-p",
+                  "type": "text",
+                  "props": {
+                    "text": "Factory-trained technicians, genuine parts, and same-week appointments to keep your trucks on the road longer.",
+                    "width": "prose"
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "#3a342c",
+                      "fontSize": 15,
+                      "lineHeight": 1.65
+                    }
+                  }
+                },
+                {
+                  "id": "service-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "book-service"
+                      }
+                    ],
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "parts-col",
+              "type": "column",
+              "props": {
+                "span": 6,
+                "anchor": "parts"
+              },
+              "children": [
+                {
+                  "id": "parts-img",
+                  "type": "image",
+                  "props": {
+                    "image": {
+                      "src": "/images/parts-shelf.jpg",
+                      "alt": "OEM truck parts on the shelves of the parts department",
+                      "width": 1200,
+                      "height": 800
+                    },
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "aspectRatio": "16/9",
+                      "overflow": "hidden",
+                      "radius": 16,
+                      "marginBottom": 24
+                    }
+                  }
+                },
+                {
+                  "id": "parts-h",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Parts Department",
+                    "text": "OEM Parts, In Stock",
+                    "headingLevel": 2
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 28
+                    }
+                  }
+                },
+                {
+                  "id": "parts-p",
+                  "type": "text",
+                  "props": {
+                    "text": "Order online or call our parts desk. Most in-stock orders ship same day.",
+                    "width": "prose"
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "#3a342c",
+                      "fontSize": 15,
+                      "lineHeight": 1.65
+                    }
+                  }
+                },
+                {
+                  "id": "parts-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "order-parts"
+                      }
+                    ],
+                    "align": "left"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "financing",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 8,
+        "background": "accent",
+        "anchor": "financing"
+      },
+      "children": [
+        {
+          "id": "financing-row",
+          "type": "row",
+          "props": {
+            "gap": 5,
+            "align": "center",
+            "stackOn": "tablet"
+          },
+          "children": [
+            {
+              "id": "financing-copy",
+              "type": "column",
+              "props": {
+                "span": 8
+              },
+              "children": [
+                {
+                  "id": "financing-h",
+                  "type": "heading",
+                  "props": {
+                    "text": "Flexible Fleet Financing",
+                    "headingLevel": 2
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 30,
+                      "textColor": "ink"
+                    }
+                  }
+                },
+                {
+                  "id": "financing-p",
+                  "type": "text",
+                  "props": {
+                    "text": "Competitive rates on new and used trucks, tailored to owner-operators and fleets alike.",
+                    "width": "prose"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 15,
+                      "textColor": "ink",
+                      "paddingTop": 0,
+                      "maxWidth": 520
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "financing-cta-col",
+              "type": "column",
+              "props": {
+                "span": 4,
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "financing-cta",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "ctaId": "get-prequalified"
+                      }
+                    ],
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "testimonials",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 10,
+        "background": "none",
+        "anchor": "testimonials",
+        "behaviour": "rotator"
+      },
+      "children": [
+        {
+          "id": "testimonials-head",
+          "type": "row",
+          "props": {
+            "gap": 4
+          },
+          "children": [
+            {
+              "id": "testimonials-head-col",
+              "type": "column",
+              "props": {
+                "span": 12
+              },
+              "children": [
+                {
+                  "id": "testimonials-title",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Customers",
+                    "text": "What Fleet Owners Say",
+                    "headingLevel": 2,
+                    "align": "center"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 32
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "testimonials-track",
+          "type": "row",
+          "props": {
+            "gap": 0,
+            "align": "center"
+          },
+          "styles": {
+            "base": {
+              "maxWidth": 900,
+              "marginLeft": "auto",
+              "marginRight": "auto"
+            }
+          },
+          "children": [
+            {
+              "id": "quote-1",
+              "type": "column",
+              "props": {
+                "span": 12,
+                "part": "slide"
+              },
+              "children": [
+                {
+                  "id": "quote-1-body",
+                  "type": "text",
+                  "props": {
+                    "text": "“They kept three of our trucks down for less than 48 hours combined all year. That's the difference a good service team makes.”",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 20,
+                      "lineHeight": 1.6
+                    }
+                  }
+                },
+                {
+                  "id": "quote-1-who",
+                  "type": "text",
+                  "props": {
+                    "text": "<strong>Marcus Webb</strong>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 15,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "quote-1-role",
+                  "type": "text",
+                  "props": {
+                    "text": "Fleet Manager, Webb Logistics",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 13,
+                      "textColor": "muted",
+                      "paddingTop": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quote-2",
+              "type": "column",
+              "props": {
+                "span": 12,
+                "part": "slide"
+              },
+              "children": [
+                {
+                  "id": "quote-2-body",
+                  "type": "text",
+                  "props": {
+                    "text": "“Financing was straightforward and the team walked us through every option for our first Class 8 purchase.”",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 20,
+                      "lineHeight": 1.6
+                    }
+                  }
+                },
+                {
+                  "id": "quote-2-who",
+                  "type": "text",
+                  "props": {
+                    "text": "<strong>Dana Ortiz</strong>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 15,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "quote-2-role",
+                  "type": "text",
+                  "props": {
+                    "text": "Owner-Operator",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 13,
+                      "textColor": "muted",
+                      "paddingTop": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quote-3",
+              "type": "column",
+              "props": {
+                "span": 12,
+                "part": "slide"
+              },
+              "children": [
+                {
+                  "id": "quote-3-body",
+                  "type": "text",
+                  "props": {
+                    "text": "“Parts counter always has what we need in stock, or it ships next day. Huge for uptime.”",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 20,
+                      "lineHeight": 1.6
+                    }
+                  }
+                },
+                {
+                  "id": "quote-3-who",
+                  "type": "text",
+                  "props": {
+                    "text": "<strong>Ray Callahan</strong>",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 15,
+                      "paddingBottom": 0
+                    }
+                  }
+                },
+                {
+                  "id": "quote-3-role",
+                  "type": "text",
+                  "props": {
+                    "text": "Operations Lead, Callahan Freight",
+                    "align": "center",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 13,
+                      "textColor": "muted",
+                      "paddingTop": 0
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "testimonials-controls",
+          "type": "row",
+          "props": {
+            "gap": 3,
+            "align": "center"
+          },
+          "styles": {
+            "base": {
+              "paddingTop": 24
+            }
+          },
+          "children": [
+            {
+              "id": "quotes-prev-col",
+              "type": "column",
+              "props": {
+                "span": 5,
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "quotes-prev",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "label": "Previous",
+                        "url": "#testimonials",
+                        "style": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "part": "prev"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "quotes-dots",
+              "type": "column",
+              "props": {
+                "span": 2,
+                "align": "center",
+                "part": "dots"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "gap": 8
+                }
+              },
+              "children": []
+            },
+            {
+              "id": "quotes-next-col",
+              "type": "column",
+              "props": {
+                "span": 5,
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "quotes-next",
+                  "type": "buttons",
+                  "props": {
+                    "items": [
+                      {
+                        "label": "Next",
+                        "url": "#testimonials",
+                        "style": "secondary"
+                      }
+                    ],
+                    "align": "center",
+                    "part": "next"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "locations",
-      "type": "locationsMap",
+      "type": "section",
       "props": {
-        "heading": "Trusted by working fleets",
-        "mapHeading": "Find a location",
-        "useLiveLocations": true
-      }
-    },
-    {
-      "id": "contact-row",
-      "type": "row",
-      "props": {
-        "align": "start",
-        "columns": [
-          [
+        "width": "boxed",
+        "paddingY": 9,
+        "background": "paper",
+        "anchor": "locations"
+      },
+      "children": [
+        {
+          "id": "locations-head",
+          "type": "row",
+          "props": {
+            "gap": 5
+          },
+          "children": [
             {
-              "id": "contact-copy",
-              "type": "heading",
-              "props": { "text": "Talk to someone who knows the equipment", "headingLevel": 2 }
-            },
-            {
-              "id": "contact-text",
-              "type": "text",
+              "id": "locations-head-col",
+              "type": "column",
               "props": {
-                "text": "Tell us what the job needs and we will spec it, price it and tell you honestly what is in stock.\n\nPrefer the phone? <a href=\"tel:+15551234567\">Call us</a> during business hours."
-              }
-            }
-          ],
-          [
-            {
-              "id": "contact-form",
-              "type": "form",
-              "props": { "formId": "request-info" }
+                "span": 12
+              },
+              "children": [
+                {
+                  "id": "locations-title",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Locations",
+                    "text": "Find a Location",
+                    "headingLevel": 2
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 32
+                    }
+                  }
+                }
+              ]
             }
           ]
-        ]
-      }
+        },
+        {
+          "id": "locations-live",
+          "type": "widget",
+          "props": {
+            "widget": "locations-map",
+            "config": {
+              "showMap": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "blog",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 9,
+        "background": "ink",
+        "anchor": "blog"
+      },
+      "children": [
+        {
+          "id": "blog-list",
+          "type": "postsList",
+          "props": {
+            "heading": "From the Road Ahead",
+            "headingLevel": 2,
+            "count": 3,
+            "showDates": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "type": "section",
+      "props": {
+        "width": "boxed",
+        "paddingY": 10,
+        "background": "none",
+        "anchor": "contact"
+      },
+      "children": [
+        {
+          "id": "contact-row",
+          "type": "row",
+          "props": {
+            "gap": 7,
+            "align": "start",
+            "stackOn": "tablet"
+          },
+          "children": [
+            {
+              "id": "contact-left",
+              "type": "column",
+              "props": {
+                "span": 6
+              },
+              "children": [
+                {
+                  "id": "contact-h",
+                  "type": "heading",
+                  "props": {
+                    "eyebrow": "Get In Touch",
+                    "text": "Talk to Our Team",
+                    "headingLevel": 2
+                  },
+                  "styles": {
+                    "base": {
+                      "fontSize": 32
+                    }
+                  }
+                },
+                {
+                  "id": "contact-intro",
+                  "type": "text",
+                  "props": {
+                    "text": "Questions about inventory, service, or financing? Send a message and we'll respond within one business day.",
+                    "width": "prose"
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "#3a342c",
+                      "fontSize": 15,
+                      "lineHeight": 1.65,
+                      "maxWidth": 440
+                    }
+                  }
+                },
+                {
+                  "id": "contact-form",
+                  "type": "form",
+                  "props": {
+                    "formId": "contact-team"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "contact-right",
+              "type": "column",
+              "props": {
+                "span": 6,
+                "background": "paper"
+              },
+              "styles": {
+                "base": {
+                  "radius": 14,
+                  "paddingTop": 36,
+                  "paddingBottom": 36,
+                  "paddingLeft": 36,
+                  "paddingRight": 36
+                }
+              },
+              "children": [
+                {
+                  "id": "newsletter-h",
+                  "type": "heading",
+                  "props": {
+                    "text": "Fleet Updates & Offers",
+                    "headingLevel": 3
+                  },
+                  "styles": {
+                    "base": {
+                      "paddingTop": 0
+                    }
+                  }
+                },
+                {
+                  "id": "newsletter-intro",
+                  "type": "text",
+                  "props": {
+                    "text": "Subscribe for new inventory alerts and service specials.",
+                    "width": "full"
+                  },
+                  "styles": {
+                    "base": {
+                      "textColor": "muted",
+                      "fontSize": 14,
+                      "paddingTop": 0
+                    }
+                  }
+                },
+                {
+                  "id": "newsletter-form",
+                  "type": "form",
+                  "props": {
+                    "formId": "newsletter"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

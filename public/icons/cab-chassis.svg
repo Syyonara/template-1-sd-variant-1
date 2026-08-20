@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44" role="img" aria-label="Cab and chassis">
+  <circle cx="22" cy="22" r="22" fill="#FDE3D8"/>
+  <g fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 25v-7h7l3 3v4z"/><path d="M21 25h13"/><path d="M31 25v-3"/>
+    <circle cx="15" cy="28" r="2.2"/><circle cx="28" cy="28" r="2.2"/>
+    <path d="M13 21h3"/>
+  </g>
+</svg>

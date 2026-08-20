@@ -2,39 +2,197 @@
   "version": 3,
   "menus": [
     {
-      "id": "main",
-      "name": "Main menu",
+      "id": "utility-phone",
+      "name": "Utility bar — phone",
       "items": [
-        { "id": "home", "label": "Home", "type": "page", "ref": "home" },
-        { "id": "inventory", "label": "Inventory", "type": "inventory" },
         {
-          "id": "about",
-          "label": "About",
+          "id": "up-main",
+          "label": "(800) 555-0199",
           "type": "url",
-          "url": "/about",
+          "url": "tel:+18005550199"
+        },
+        {
+          "id": "up-sales",
+          "label": "Call Sales",
+          "type": "url",
+          "url": "tel:+18005550199"
+        }
+      ]
+    },
+    {
+      "id": "main",
+      "name": "Main navigation",
+      "items": [
+        {
+          "id": "inventory",
+          "label": "Inventory",
+          "type": "inventory",
+          "ref": null,
           "children": [
-            { "id": "about-team", "label": "Our team", "type": "url", "url": "/about#team" },
-            { "id": "about-history", "label": "History", "type": "url", "url": "/about#history" }
+            {
+              "id": "inv-all",
+              "label": "All Inventory",
+              "type": "inventory",
+              "ref": null
+            },
+            {
+              "id": "inv-new",
+              "label": "New Trucks",
+              "type": "url",
+              "url": "/store?condition=new"
+            },
+            {
+              "id": "inv-used",
+              "label": "Used Trucks",
+              "type": "url",
+              "url": "/store?condition=used"
+            }
           ]
         },
-        { "id": "contact", "label": "Contact", "type": "url", "url": "/contact" }
+        {
+          "id": "brands",
+          "label": "Brands",
+          "type": "url",
+          "url": "/#brands"
+        },
+        {
+          "id": "lease-rental",
+          "label": "Lease & Rental",
+          "type": "url",
+          "url": "/store?offer=lease"
+        },
+        {
+          "id": "service",
+          "label": "Service",
+          "type": "url",
+          "url": "/#service"
+        },
+        {
+          "id": "parts",
+          "label": "Parts",
+          "type": "url",
+          "url": "/#parts"
+        },
+        {
+          "id": "financing",
+          "label": "Financing",
+          "type": "url",
+          "url": "/#financing"
+        }
+      ]
+    },
+    {
+      "id": "utility",
+      "name": "Utility bar",
+      "items": [
+        {
+          "id": "u-careers",
+          "label": "Careers",
+          "type": "post",
+          "ref": "training-the-next-generation"
+        },
+        {
+          "id": "u-about",
+          "label": "About Us",
+          "type": "url",
+          "url": "/#stats"
+        },
+        {
+          "id": "u-locations",
+          "label": "6 Locations",
+          "type": "url",
+          "url": "/#locations"
+        }
       ]
     },
     {
       "id": "footer",
-      "name": "Footer menu",
+      "name": "Footer — Shop",
       "items": [
-        { "id": "f-inventory", "label": "Inventory", "type": "inventory" },
-        { "id": "f-about", "label": "About", "type": "url", "url": "/about" },
-        { "id": "f-contact", "label": "Contact", "type": "url", "url": "/contact" }
+        {
+          "id": "f-new",
+          "label": "New Trucks",
+          "type": "url",
+          "url": "/store?condition=new"
+        },
+        {
+          "id": "f-used",
+          "label": "Used Trucks",
+          "type": "url",
+          "url": "/store?condition=used"
+        },
+        {
+          "id": "f-financing",
+          "label": "Financing",
+          "type": "url",
+          "url": "/#financing"
+        }
+      ]
+    },
+    {
+      "id": "footer-support",
+      "name": "Footer — Support",
+      "items": [
+        {
+          "id": "fs-service",
+          "label": "Service",
+          "type": "url",
+          "url": "/#service"
+        },
+        {
+          "id": "fs-parts",
+          "label": "Parts",
+          "type": "url",
+          "url": "/#parts"
+        },
+        {
+          "id": "fs-contact",
+          "label": "Contact",
+          "type": "url",
+          "url": "/#contact"
+        }
+      ]
+    },
+    {
+      "id": "footer-company",
+      "name": "Footer — Company",
+      "items": [
+        {
+          "id": "fc-about",
+          "label": "About Us",
+          "type": "url",
+          "url": "/#stats"
+        },
+        {
+          "id": "fc-locations",
+          "label": "Locations",
+          "type": "url",
+          "url": "/#locations"
+        },
+        {
+          "id": "fc-careers",
+          "label": "Careers",
+          "type": "post",
+          "ref": "training-the-next-generation"
+        }
       ]
     },
     {
       "id": "legal",
       "name": "Legal",
       "items": [
-        { "id": "privacy", "label": "Privacy", "type": "url", "url": "/privacy" },
-        { "id": "terms", "label": "Terms", "type": "url", "url": "/terms" }
+        {
+          "id": "privacy",
+          "label": "Privacy Policy",
+          "type": "page",
+          "ref": "privacy"
+        },
+        {
+          "id": "terms",
+          "label": "Terms",
+          "type": "page",
+          "ref": "terms"
+        }
       ]
     }
   ]

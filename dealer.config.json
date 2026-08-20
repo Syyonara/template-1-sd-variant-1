@@ -1,8 +1,8 @@
 {
   "$schema": "./dealer.config.schema.json",
   "contractVersion": "4.0.0",
-  "name": "BuzzNerd Dealer",
-  "shortName": "BuzzNerd",
+  "name": "Ironhaul Truck Centers",
+  "shortName": "Ironhaul",
   "channelToken": "REPLACE_CHANNEL_TOKEN",
   "domain": "REPLACE_CHANNEL_TOKEN.buzznerd.com",
   "url": "https://REPLACE_CHANNEL_TOKEN.buzznerd.com",
@@ -16,25 +16,25 @@
   },
   "business": {
     "type": "AutoDealer",
-    "legalName": "BuzzNerd Trucks LLC",
-    "phone": "+1-800-555-0100",
-    "email": "sales@example.com",
-    "streetAddress": "1234 Highway Dr",
-    "addressLocality": "Salt Lake City",
-    "addressRegion": "UT",
-    "postalCode": "84101",
+    "legalName": "Ironhaul Truck Centers",
+    "phone": "+1-800-555-0199",
+    "email": "sales@ironhaultruckcenters.com",
+    "streetAddress": "1 Ironhaul Way",
+    "addressLocality": "Dallas",
+    "addressRegion": "TX",
+    "postalCode": "75201",
     "addressCountry": "US",
-    "latitude": 40.7608,
-    "longitude": -111.891,
+    "latitude": 32.7767,
+    "longitude": -96.797,
     "priceRange": "$$",
-    "openingHours": ["Mo-Fr 08:00-18:00", "Sa 09:00-16:00"]
+    "openingHours": ["Mo-Fr 07:00-18:00", "Sa 08:00-14:00"]
   },
   "seo": {
-    "defaultTitle": "BuzzNerd Dealer | Trucks, Parts & Service",
-    "titleTemplate": "%s | BuzzNerd Dealer",
-    "defaultDescription": "New and used trucks, expert service, genuine parts, financing and leasing from a dealer you can trust.",
-    "ogImage": "/og-default.jpg",
+    "defaultTitle": "Ironhaul Truck Centers | New & Used Commercial Trucks, Service & Parts",
+    "titleTemplate": "%s | Ironhaul Truck Centers",
+    "defaultDescription": "Shop new and used medium and heavy-duty trucks, schedule certified service, order OEM parts, and get flexible fleet financing at Ironhaul Truck Centers. Locations across TX, MS & OK.",
+    "ogImage": "/images/sunset-highway.jpg",
     "locale": "en_US",
-    "themeColor": "#111c3a"
+    "themeColor": "#1a1714"
   }
 }

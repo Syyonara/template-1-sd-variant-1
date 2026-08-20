@@ -1,16 +1,16 @@
 [
   {
     "id": "browse-inventory",
-    "label": "Browse inventory",
+    "label": "View all inventory",
     "url": "/store",
-    "style": "primary",
+    "style": "link",
     "intent": "browse-inventory",
     "newTab": false,
     "active": true
   },
   {
     "id": "request-quote",
-    "label": "Request a quote",
+    "label": "Check availability",
     "url": null,
     "formId": "request-a-quote",
     "style": "primary",
@@ -20,29 +20,76 @@
   },
   {
     "id": "book-service",
-    "label": "Book service",
+    "label": "Schedule Service",
     "url": null,
     "formId": "request-info",
-    "style": "secondary",
+    "style": "primary",
     "intent": "book-service",
     "newTab": false,
     "active": true
   },
   {
     "id": "call-us",
-    "label": "Call us",
-    "url": "tel:+15551234567",
-    "style": "secondary",
+    "label": "(800) 555-0199",
+    "url": "tel:+18005550199",
+    "style": "link",
     "intent": "call-dealer",
     "newTab": false,
     "active": true
   },
   {
     "id": "about-us",
-    "label": "About us",
-    "url": "/about",
-    "style": "link",
+    "label": "Learn More About Us",
+    "url": "/#stats",
+    "style": "primary",
     "intent": "about",
+    "newTab": false,
+    "active": true
+  },
+  {
+    "id": "call-sales",
+    "label": "Call Sales",
+    "url": "tel:+18005550199",
+    "style": "link",
+    "intent": "call-sales",
+    "newTab": false,
+    "active": true
+  },
+  {
+    "id": "explore-brand",
+    "label": "Explore Brand",
+    "url": "/store",
+    "style": "primary",
+    "intent": "browse-brand",
+    "newTab": false,
+    "active": true
+  },
+  {
+    "id": "order-parts",
+    "label": "Order Parts",
+    "url": null,
+    "formId": "request-info",
+    "style": "secondary",
+    "intent": "order-parts",
+    "newTab": false,
+    "active": true
+  },
+  {
+    "id": "get-prequalified",
+    "label": "Get Pre-Qualified",
+    "url": null,
+    "formId": "request-a-quote",
+    "style": "secondary",
+    "intent": "get-financing",
+    "newTab": false,
+    "active": true
+  },
+  {
+    "id": "back-to-top",
+    "label": "Back to top",
+    "url": "/#top",
+    "style": "primary",
+    "intent": "back-to-top",
     "newTab": false,
     "active": true
   }

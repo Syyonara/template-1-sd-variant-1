@@ -2,12 +2,34 @@
   {
     "slug": "home",
     "title": "Home",
-    "description": "New and used trucks, service and parts from a dealer you can trust.",
+    "description": "Shop new and used medium and heavy-duty trucks, schedule certified service, order OEM parts, and get flexible fleet financing at Ironhaul Truck Centers.",
     "path": "/",
     "out": "index.html",
     "dir": "home",
     "status": "published",
-    "seo": { "ogImage": null, "noindex": false },
+    "seo": { "ogImage": "/images/sunset-highway.jpg", "noindex": false },
+    "templates": { "header": null, "footer": null, "utilityNav": null }
+  },
+  {
+    "slug": "privacy",
+    "title": "Privacy Policy",
+    "description": "How Ironhaul Truck Centers handles the information you give us.",
+    "path": "/privacy",
+    "out": "privacy/index.html",
+    "dir": "privacy",
+    "status": "published",
+    "seo": { "ogImage": null, "noindex": true },
+    "templates": { "header": null, "footer": null, "utilityNav": null }
+  },
+  {
+    "slug": "terms",
+    "title": "Terms of Use",
+    "description": "The terms that apply to this website.",
+    "path": "/terms",
+    "out": "terms/index.html",
+    "dir": "terms",
+    "status": "published",
+    "seo": { "ogImage": null, "noindex": true },
     "templates": { "header": null, "footer": null, "utilityNav": null }
   }
 ]

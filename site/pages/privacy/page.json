@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "nodes": [
+    {
+      "id": "privacy-body",
+      "type": "section",
+      "props": { "width": "boxed", "paddingY": 9, "background": "none" },
+      "children": [
+        {
+          "id": "privacy-row",
+          "type": "row",
+          "props": { "gap": 6 },
+          "children": [
+            {
+              "id": "privacy-col",
+              "type": "column",
+              "props": { "span": 8 },
+              "children": [
+                {
+                  "id": "privacy-h",
+                  "type": "heading",
+                  "props": { "eyebrow": "Legal", "text": "Privacy Policy", "headingLevel": 1 }
+                },
+                {
+                  "id": "privacy-text",
+                  "type": "text",
+                  "props": {
+                    "text": "<strong>This policy has not been written yet.</strong> The design handoff this site was built from did not include legal copy, and the footer links here.\n\nReplace this page with your own privacy policy — how you collect enquiry and finance-application data, who it is shared with, how long it is kept, and how someone asks for it to be deleted — before the site goes live."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

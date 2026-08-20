@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44" role="img" aria-label="Sleeper cabs">
+  <circle cx="22" cy="22" r="22" fill="#FDE3D8"/>
+  <g fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 26V17h13v9"/><path d="M24 20h5l4 4v2h-9z"/>
+    <circle cx="16" cy="28" r="2.2"/><circle cx="29" cy="28" r="2.2"/>
+    <path d="M11 26h2.8M18.2 26h8.6M31.2 26H33"/><path d="M14 17v-2h7v2"/>
+  </g>
+</svg>

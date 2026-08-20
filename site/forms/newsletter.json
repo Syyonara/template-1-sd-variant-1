@@ -1,0 +1,28 @@
+{
+  "id": "newsletter",
+  "name": "Get inventory alerts",
+  "status": "live",
+  "system": false,
+  "surfaces": [
+    "page",
+    "blog"
+  ],
+  "intent": "subscribe",
+  "submitLabel": "Subscribe",
+  "successMessage": "You're subscribed!",
+  "consent": {
+    "enabled": true,
+    "required": true,
+    "text": "I agree to receive inventory alerts and service offers by email. Unsubscribe any time."
+  },
+  "fields": [
+    {
+      "id": "nl-email",
+      "type": "email",
+      "label": "Email address",
+      "placeholder": "you@company.com",
+      "required": true
+    }
+  ],
+  "notifications": []
+}

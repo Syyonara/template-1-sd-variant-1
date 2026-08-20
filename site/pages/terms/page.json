@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "nodes": [
+    {
+      "id": "terms-body",
+      "type": "section",
+      "props": { "width": "boxed", "paddingY": 9, "background": "none" },
+      "children": [
+        {
+          "id": "terms-row",
+          "type": "row",
+          "props": { "gap": 6 },
+          "children": [
+            {
+              "id": "terms-col",
+              "type": "column",
+              "props": { "span": 8 },
+              "children": [
+                {
+                  "id": "terms-h",
+                  "type": "heading",
+                  "props": { "eyebrow": "Legal", "text": "Terms of Use", "headingLevel": 1 }
+                },
+                {
+                  "id": "terms-text",
+                  "type": "text",
+                  "props": {
+                    "text": "<strong>These terms have not been written yet.</strong> The design handoff this site was built from did not include legal copy, and the footer links here.\n\nReplace this page with your own terms of use — acceptable use of the site, the status of pricing and availability shown against live inventory, warranty disclaimers, and governing law — before the site goes live."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

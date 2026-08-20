@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "id": "default",
-  "name": "Site template",
+  "id": "home",
+  "name": "Home template (nav over the hero)",
   "conditions": [
     {
-      "type": "entireSite",
-      "ref": null
+      "type": "page",
+      "ref": "home"
     }
   ],
   "nodes": [
@@ -15,8 +15,17 @@
       "props": {
         "width": "full",
         "paddingY": 0,
-        "background": "ink",
+        "background": "none",
         "anchor": "top"
+      },
+      "styles": {
+        "base": {
+          "position": "absolute",
+          "top": 0,
+          "left": 0,
+          "right": 0,
+          "zIndex": 40
+        }
       },
       "children": [
         {

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44" role="img" aria-label="Dump trucks">
+  <circle cx="22" cy="22" r="22" fill="#FDE3D8"/>
+  <g fill="none" stroke="#1A1714" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 26v-4h11l2-8 9 3-2 9z"/><path d="M23 22h9"/>
+    <circle cx="15" cy="28" r="2.2"/><circle cx="28" cy="28" r="2.2"/>
+    <path d="M10 26h2.8M17.2 26h8.6M30.2 26H34"/>
+  </g>
+</svg>
