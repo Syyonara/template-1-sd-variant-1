@@ -78,6 +78,12 @@
           "label": "Financing",
           "type": "url",
           "url": "/#financing"
+        },
+        {
+          "id": "nav-search-item",
+          "label": "Search",
+          "type": "inventory",
+          "ref": null
         }
       ]
     },
