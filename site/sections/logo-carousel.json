@@ -35,7 +35,7 @@
               "id": "logos-headcol",
               "type": "column",
               "props": { "span": 12 },
-              "children": [{ "id": "logos-title", "type": "heading", "props": { "text": "{{heading}}", "level": 2 } }]
+              "children": [{ "id": "logos-title", "type": "heading", "props": { "text": "{{heading}}", "headingLevel": 2 } }]
             }
           ]
         },

@@ -12,7 +12,7 @@
 // its drop rules from, so a tree the editor let you build always validates.
 
 import { getBlock } from './blocks.mjs';
-import { accepts, getLayout, isLayout, parseDocument } from './nodes.mjs';
+import { UNIVERSAL_PROPS, accepts, getLayout, isLayout, parseDocument } from './nodes.mjs';
 import { allWidgetIds } from './blocks.mjs';
 
 const KNOWN_KEYWORDS = new Set([
@@ -112,6 +112,21 @@ export function getDefinition(type) {
   return getLayout(type) || getBlock(type);
 }
 
+/**
+ * A block's schema, widened by the props every node carries.
+ *
+ * Built here rather than baked into each block's schema so the block library
+ * stays a description of what that block does, and one table — UNIVERSAL_PROPS —
+ * stays the answer to "what may any node declare".
+ */
+function withUniversalProps(schema) {
+  if (!schema || schema.type !== 'object') return schema;
+  return {
+    ...schema,
+    properties: { ...UNIVERSAL_PROPS, ...(schema.properties || {}) },
+  };
+}
+
 function checkNode(node, parentType, path, errors, seen) {
   if (!node || typeof node !== 'object' || Array.isArray(node)) {
     errors.push({ path, message: 'must be a node object' });
@@ -143,7 +158,12 @@ function checkNode(node, parentType, path, errors, seen) {
     });
   }
 
-  check(definition.schema, node.props || {}, `${path}.props`, errors);
+  // Every node accepts the universal props whatever its own schema says —
+  // `anchor`, `scope`, `repeat` and the behaviour set are read off the wrapper by
+  // the renderer for any type. Checking a block's own schema alone reported all
+  // six as "unknown property (will be ignored)", which is both wrong and the
+  // worst kind of wrong: it told an author their working carousel was ignored.
+  check(withUniversalProps(definition.schema), node.props || {}, `${path}.props`, errors);
 
   const children = Array.isArray(node.children) ? node.children : [];
   if (children.length && !isLayout(node.type)) {

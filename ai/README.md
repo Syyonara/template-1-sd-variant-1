@@ -1,5 +1,10 @@
 # The AI contract in this repo
 
+> Looking for how to **author** this repo — the document model, the block
+> catalogue, the validation loop, how a handoff becomes a site? That is
+> `CLAUDE.md` in the repo root. The files here are the runtime prompt contract
+> for the AI *inside the dashboard*, which is a different job.
+
 Two contracts live here, and they are not alternatives — they cover two page formats
 that both still build.
 

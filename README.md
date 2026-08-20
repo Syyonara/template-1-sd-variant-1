@@ -6,10 +6,19 @@ the dashboard's Website editor, stored here as JSON, and rendered to static HTML
 Vercel. `/store/*` is rewritten to the Remix storefront.
 
 ```bash
+npm run validate   # every site/ file against the renderer's rules  <- run this first
 npm run build      # node scripts/build.mjs      -> dist/   (zero dependencies)
 npm test           # node --test renderer/…      the renderer's own specs
+npm run check      # validate + test + build, in that order
 npm run schemas    # regenerate renderer/block-schemas.json
 ```
+
+**Authoring this repo by hand or with an agent?** Read `CLAUDE.md` — the document
+model, the block catalogue, what is writable, and how a finished repo is connected
+to a dealer's channel in the dashboard. `npm run validate` is the gate: it runs the
+renderer's own validators over every file and reports the file, the path inside it
+and the fix, including the cross-file references (a `formId` with no form, a menu
+item pointing at a deleted page) that no single-file check can see.
 
 ## Layout
 
