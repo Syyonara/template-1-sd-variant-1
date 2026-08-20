@@ -1,5 +1,5 @@
 {
-  "rendererVersion": "4.7.0",
+  "rendererVersion": "4.8.0",
   "documentVersion": 2,
   "gridColumns": 12,
   "tokenGroups": {
@@ -1097,11 +1097,13 @@
         "properties": {
           "width": {
             "type": "string",
-            "description": "How wide the content inside runs.",
+            "description": "How wide the content inside runs. bleed-left/bleed-right align one side to the page grid while the other side runs to the screen edge — the split-section pattern where copy stays on the grid and the photo bleeds.",
             "enum": [
               "boxed",
               "wide",
-              "full"
+              "full",
+              "bleed-left",
+              "bleed-right"
             ],
             "default": "boxed"
           },
@@ -2591,6 +2593,72 @@
         "required": [
           "logos"
         ]
+      }
+    },
+    {
+      "id": "postsList",
+      "label": "Latest posts",
+      "category": "prebuilt",
+      "group": "prebuilt",
+      "autoTagged": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Optional heading, e.g. \"News & insights\"."
+          },
+          "headingLevel": {
+            "type": "integer",
+            "description": "Heading level for this block. Keep one h1 per page.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 2
+          },
+          "count": {
+            "type": "integer",
+            "description": "How many recent posts to show.",
+            "minimum": 1,
+            "maximum": 6,
+            "default": 3
+          },
+          "showDates": {
+            "type": "boolean",
+            "description": "Show each post’s date.",
+            "default": true
+          },
+          "cta": {
+            "type": "object",
+            "description": "A call to action. Prefer `ctaId` referencing the dealer's Buttons library over an inline label/url — a library CTA keeps its label, destination and tagging consistent everywhere it appears.",
+            "properties": {
+              "ctaId": {
+                "type": "string",
+                "description": "Id of an entry in site/buttons.json."
+              },
+              "label": {
+                "type": "string",
+                "description": "Inline label. Overrides the library label when both are set."
+              },
+              "url": {
+                "type": "string",
+                "description": "Inline destination. Overrides the library destination."
+              },
+              "style": {
+                "type": "string",
+                "description": "Visual variant.",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "link"
+                ]
+              },
+              "intent": {
+                "type": "string",
+                "description": "Analytics intent, e.g. \"get-quote\". Defaults to the library value."
+              }
+            }
+          }
+        }
       }
     },
     {

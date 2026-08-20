@@ -93,6 +93,17 @@ function container(inner, extra) {
 }
 
 /**
+ * A post date, readable. Falls back to the raw string: a date that does not
+ * parse is still the author's date, and "2024-13-45" showing verbatim is more
+ * debuggable than "Invalid Date" shipping on a dealer's homepage.
+ */
+function formatPostDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+/**
  * Resolve a CTA reference against the dealer's Buttons library. An unknown
  * `ctaId` degrades to whatever inline values exist rather than rendering a
  * dead button, and records a warning so the editor can flag it.
@@ -798,6 +809,71 @@ const BLOCKS = {
           cells,
           '',
         )}</div>`,
+      );
+    },
+  },
+
+  /**
+   * The latest blog posts, from the site's own blog — never typed in.
+   *
+   * Both reference handoffs carry an insights/blog teaser, and without this
+   * block every dealer hand-maintains a `categoryGrid` of post cards that goes
+   * stale the day the next post publishes. The list resolves at build time from
+   * `ctx.posts` (the same set `build.mjs` renders the blog from), so publishing
+   * a post updates every teaser on the site in the same build.
+   */
+  postsList: {
+    label: 'Latest posts',
+    category: 'prebuilt',
+    schema: {
+      type: 'object',
+      properties: {
+        heading: str('Optional heading, e.g. "News & insights".'),
+        headingLevel: HEADING_LEVEL,
+        count: int('How many recent posts to show.', { minimum: 1, maximum: 6, default: 3 }),
+        showDates: { type: 'boolean', description: 'Show each post’s date.', default: true },
+        cta: CTA_SCHEMA,
+      },
+    },
+    render(props, ctx) {
+      const base = ctx.blogBasePath || '/blog';
+      const count = Math.min(6, Math.max(1, Number(props.count) || 3));
+      let posts = (Array.isArray(ctx.posts) ? ctx.posts : [])
+        .filter((p) => p && p.slug && p.title && (p.status ?? 'published') === 'published')
+        .slice(0, count);
+      // The editor must show the shape even before the first post exists; a
+      // build with no posts renders nothing rather than an empty band.
+      if (!posts.length) {
+        if (!ctx.editing) return '';
+        posts = Array.from({ length: count }, (_, i) => ({
+          slug: '',
+          title: `Post title ${i + 1}`,
+          description: 'A sentence of the post, shown once a real post is published.',
+          date: '',
+          coverImage: null,
+        }));
+      }
+      const cards = posts.map((post) => {
+        const body =
+          `${image(post.coverImage ? { src: post.coverImage, alt: post.title } : null, { placeholder: 'Cover' })}` +
+          `<div class="bz-card__body">${
+            props.showDates !== false && post.date
+              ? `<span class="bz-card__m">${esc(formatPostDate(post.date))}</span>`
+              : ''
+          }<span class="bz-card__t">${esc(post.title)}</span>${
+            post.description ? `<span class="bz-post__d">${esc(post.description)}</span>` : ''
+          }</div>`;
+        return post.slug
+          ? `<a class="bz-card bz-post" href="${esc(href(`${base}/${post.slug}`, ctx))}"${attrs(
+              tagAttrs('link', 'read-post'),
+            )}>${body}</a>`
+          : `<div class="bz-card bz-post">${body}</div>`;
+      });
+      return container(
+        `<div class="bz-sechead">${heading(levelOf(props), props.heading)}${renderCtas(
+          props.cta ? [props.cta] : [],
+          ctx,
+        )}</div><div class="bz-grid bz-grid--${Math.min(3, posts.length)}">${join(cards, '')}</div>`,
       );
     },
   },

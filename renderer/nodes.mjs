@@ -118,10 +118,15 @@ export const LAYOUT_REGISTRY = {
     schema: {
       type: 'object',
       properties: {
-        width: str('How wide the content inside runs.', {
-          enum: ['boxed', 'wide', 'full'],
-          default: 'boxed',
-        }),
+        width: str(
+          'How wide the content inside runs. bleed-left/bleed-right align one side to ' +
+            'the page grid while the other side runs to the screen edge — the split-' +
+            'section pattern where copy stays on the grid and the photo bleeds.',
+          {
+            enum: ['boxed', 'wide', 'full', 'bleed-left', 'bleed-right'],
+            default: 'boxed',
+          },
+        ),
         background: str('Surface behind this section.', {
           enum: SECTION_BACKGROUNDS,
           default: 'none',
@@ -141,7 +146,14 @@ export const LAYOUT_REGISTRY = {
       const inner = renderChildren(node.children, ctx);
       const width = props.width || 'boxed';
       const body =
-        width === 'full' ? inner : `<div class="${cls('bz-container', width === 'wide' && 'bz-container--wide')}">${inner}</div>`;
+        width === 'full'
+          ? inner
+          : `<div class="${cls(
+              'bz-container',
+              width === 'wide' && 'bz-container--wide',
+              width === 'bleed-left' && 'bz-container--bleed-left',
+              width === 'bleed-right' && 'bz-container--bleed-right',
+            )}">${inner}</div>`;
       return `<section${attrs({
         class: cls(
           'bz-section',

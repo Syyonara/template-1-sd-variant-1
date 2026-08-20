@@ -18,6 +18,11 @@
 // Zero runtime dependencies, ESM, Node 20 and modern browsers. It is imported by
 // a zero-dependency static build, so it may not add a bundler requirement to it.
 
+// 4.8.0 — `postsList` block: the latest published posts, resolved at build time
+// from ctx.posts so a teaser never goes stale; and half-bleed section widths
+// (`bleed-left` / `bleed-right`) — one side on the page grid, the other running
+// to the screen edge, the split-section pattern every marketing homepage uses.
+//
 // 4.7.0 — `documentStyles` compiles instance style overrides for a document and
 // for every designed component it places. `compileNodeStyles` sees only the nodes
 // it is given, and a page holds a component as one reference node, so anything
@@ -34,7 +39,7 @@
 // person or a model hand-writes. `anchor` and `scope` join them as declared
 // universal props: the renderer always read those off any node's wrapper while no
 // widget declared them, so the validator refused edits the build would render.
-export const RENDERER_VERSION = '4.7.0';
+export const RENDERER_VERSION = '4.8.0';
 
 export {
   BEHAVIOURS,

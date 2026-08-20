@@ -141,6 +141,37 @@
 .bz-section > .bz-container { max-width: var(--container); padding-inline: var(--space-4); }
 .bz-section > .bz-container.bz-container--wide { max-width: min(1600px, 96vw); }
 
+/* Half-bleed: one side stays on the page grid, the other runs to the screen
+   edge — the split-section pattern (copy on the grid, photo bleeding). The
+   grid-side padding is the distance from the screen edge to where the boxed
+   container would start, so text lines up with every boxed section above it. */
+.bz-section > .bz-container.bz-container--bleed-left,
+.bz-section > .bz-container.bz-container--bleed-right { max-width: none; }
+.bz-section > .bz-container.bz-container--bleed-left {
+  padding-left: 0;
+  padding-right: max(var(--container-pad, var(--space-4)), calc((100% - var(--container)) / 2 + var(--container-pad, var(--space-4))));
+}
+.bz-section > .bz-container.bz-container--bleed-right {
+  padding-right: 0;
+  padding-left: max(var(--container-pad, var(--space-4)), calc((100% - var(--container)) / 2 + var(--container-pad, var(--space-4))));
+}
+@media (max-width: 1100px) {
+  /* Below the grid width the bleed reads as clutter; behave like boxed. */
+  .bz-section > .bz-container.bz-container--bleed-left,
+  .bz-section > .bz-container.bz-container--bleed-right {
+    padding-inline: var(--container-pad-tablet, var(--container-pad, var(--space-4)));
+  }
+}
+
+/* Latest posts: category-grid cards plus a description line. */
+.bz-post { text-align: left; }
+.bz-post__d {
+  display: block;
+  margin-top: 4px;
+  font: 400 var(--text-small) / 1.5 var(--font-body);
+  color: var(--muted);
+}
+
 .bz-block--hero, .bz-block--statBand, .bz-block--serviceGrid, .bz-block--footer {
   padding-block: var(--space-8);
   background: var(--ink);

@@ -370,6 +370,31 @@ function pageNodes(dir, slug) {
   return [{ id: 'legacy-body', type: 'customHtml', props: { html: body } }];
 }
 
+/* Blog posts load before any page renders: the postsList block shows the latest
+   posts on ordinary pages (the home page teaser both reference designs carry),
+   so they must be in the render context by then — not only when the blog itself
+   is emitted further down. */
+const BLOG = join(SITE, 'blog');
+const blogSettings = readJsonIf(join(BLOG, 'settings.json'), {
+  enabled: true,
+  basePath: '/blog',
+  title: 'News',
+  description: '',
+});
+const blogBase = String(blogSettings.basePath || '/blog').replace(/\/$/, '');
+const posts = [];
+if (blogSettings.enabled && existsSync(join(BLOG, 'posts'))) {
+  for (const f of readdirSync(join(BLOG, 'posts'))) {
+    if (!f.endsWith('.json')) continue;
+    const post = readJson(join(BLOG, 'posts', f));
+    if ((post.status || 'published') !== 'published') continue;
+    posts.push(post);
+  }
+  posts.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+renderCtx.posts = posts;
+renderCtx.blogBasePath = blogBase;
+
 const emitted = [];
 for (const p of pages) {
   const status = p.status || 'published';
@@ -433,25 +458,12 @@ write('partials/fonts.txt', FONTS_HREF);
 
 /* --------------------------------------------------------------------- blog */
 
-const BLOG = join(SITE, 'blog');
-const posts = [];
-if (existsSync(join(BLOG, 'posts'))) {
-  const settings = readJsonIf(join(BLOG, 'settings.json'), {
-    enabled: true,
-    basePath: '/blog',
-    title: 'News',
-    description: '',
-  });
+// Posts themselves were loaded above, ahead of the pages.
+if (blogSettings.enabled && posts.length) {
+  const settings = blogSettings;
 
-  if (settings.enabled) {
-    const base = String(settings.basePath || '/blog').replace(/\/$/, '');
-    for (const f of readdirSync(join(BLOG, 'posts'))) {
-      if (!f.endsWith('.json')) continue;
-      const post = readJson(join(BLOG, 'posts', f));
-      if ((post.status || 'published') !== 'published') continue;
-      posts.push(post);
-    }
-    posts.sort((a, b) => (a.date < b.date ? 1 : -1));
+  {
+    const base = blogBase;
 
     // A post authored as blocks renders through the same path a page does; the
     // legacy `body` string stays supported so existing posts keep working.
@@ -539,7 +551,7 @@ const storefrontRoutes = [
   { pattern: `/${PREFIX}`, target: { kind: 'inventory' } },
   { pattern: `/${PREFIX}/*`, target: { kind: 'inventory' } },
   ...emitted.map((p) => ({ pattern: p.path, target: { kind: 'page', slug: p.slug, group: p.group } })),
-  ...posts.map((post) => ({ pattern: `/blog/${post.slug}`, target: { kind: 'post', slug: post.slug } })),
+  ...posts.map((post) => ({ pattern: `${blogBase}/${post.slug}`, target: { kind: 'post', slug: post.slug } })),
 ];
 
 const chromeManifest = {};
@@ -583,11 +595,13 @@ write(
 
 /* ------------------------------------------------------------------ sitemap */
 
-const blogBase = posts.length ? '/blog' : null;
+// The real blog base from settings, not a hardcoded /blog — a dealer whose blog
+// lives at /news was emitting a sitemap full of addresses that 404.
+const sitemapBlogBase = posts.length ? blogBase : null;
 const sitemapUrls = indexable
   .map((p) => config.url + p.path)
-  .concat(posts.map((p) => `${config.url}${blogBase}/${p.slug}`))
-  .concat(blogBase ? [config.url + blogBase] : [])
+  .concat(posts.map((p) => `${config.url}${sitemapBlogBase}/${p.slug}`))
+  .concat(sitemapBlogBase ? [config.url + sitemapBlogBase] : [])
   .concat([`${config.url}/${PREFIX}`]);
 write(
   'sitemap.xml',
