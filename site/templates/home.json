@@ -219,30 +219,6 @@
                       "paddingRight": 0
                     }
                   }
-                },
-                {
-                  "id": "nav-search",
-                  "type": "buttons",
-                  "props": {
-                    "items": [
-                      {
-                        "label": "Search inventory",
-                        "url": "/store",
-                        "style": "link",
-                        "intent": "inventory-search"
-                      }
-                    ]
-                  },
-                  "styles": {
-                    "base": {
-                      "marginLeft": 4,
-                      "paddingTop": 0,
-                      "paddingBottom": 0
-                    },
-                    "tablet": {
-                      "hide": true
-                    }
-                  }
                 }
               ],
               "styles": {

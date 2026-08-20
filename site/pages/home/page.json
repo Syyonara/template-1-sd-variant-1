@@ -541,11 +541,9 @@
       "type": "section",
       "props": {
         "width": "boxed",
-        "paddingY": 10,
+        "paddingY": 0,
         "background": "none",
-        "anchor": "brands",
-        "behaviour": "carousel",
-        "behaviourOptions": "{\"perMove\":1,\"label\":\"Brands we carry\"}"
+        "anchor": "brands"
       },
       "children": [
         {
@@ -587,17 +585,15 @@
           "id": "brands-rail",
           "type": "row",
           "props": {
-            "gap": 5,
-            "align": "stretch",
-            "part": "track"
+            "gap": 0,
+            "align": "stretch"
           },
           "children": [
             {
               "id": "brand-atlas",
               "type": "column",
               "props": {
-                "span": 4,
-                "part": "slide"
+                "span": 12
               },
               "styles": {
                 "base": {
@@ -607,12 +603,14 @@
                   "alignItems": "center",
                   "gap": 12,
                   "aspectRatio": "1/1",
-                  "background": "#ede7da",
                   "radius": 14,
                   "overflow": "hidden",
                   "paddingLeft": 24,
                   "paddingRight": 24,
-                  "textAlign": "center"
+                  "textAlign": "center",
+                  "width": 340,
+                  "position": "absolute",
+                  "transition": "slow"
                 }
               },
               "children": [
@@ -658,8 +656,7 @@
               "id": "brand-summit",
               "type": "column",
               "props": {
-                "span": 4,
-                "part": "slide"
+                "span": 12
               },
               "styles": {
                 "base": {
@@ -669,12 +666,14 @@
                   "alignItems": "center",
                   "gap": 12,
                   "aspectRatio": "1/1",
-                  "background": "#ede7da",
                   "radius": 14,
                   "overflow": "hidden",
                   "paddingLeft": 24,
                   "paddingRight": 24,
-                  "textAlign": "center"
+                  "textAlign": "center",
+                  "width": 340,
+                  "position": "absolute",
+                  "transition": "slow"
                 }
               },
               "children": [
@@ -720,8 +719,7 @@
               "id": "brand-vantage",
               "type": "column",
               "props": {
-                "span": 4,
-                "part": "slide"
+                "span": 12
               },
               "styles": {
                 "base": {
@@ -731,12 +729,14 @@
                   "alignItems": "center",
                   "gap": 12,
                   "aspectRatio": "1/1",
-                  "background": "#ede7da",
                   "radius": 14,
                   "overflow": "hidden",
                   "paddingLeft": 24,
                   "paddingRight": 24,
-                  "textAlign": "center"
+                  "textAlign": "center",
+                  "width": 340,
+                  "position": "absolute",
+                  "transition": "slow"
                 }
               },
               "children": [
@@ -782,8 +782,7 @@
               "id": "brand-ridgeline",
               "type": "column",
               "props": {
-                "span": 4,
-                "part": "slide"
+                "span": 12
               },
               "styles": {
                 "base": {
@@ -793,12 +792,14 @@
                   "alignItems": "center",
                   "gap": 12,
                   "aspectRatio": "1/1",
-                  "background": "#ede7da",
                   "radius": 14,
                   "overflow": "hidden",
                   "paddingLeft": 24,
                   "paddingRight": 24,
-                  "textAlign": "center"
+                  "textAlign": "center",
+                  "width": 340,
+                  "position": "absolute",
+                  "transition": "slow"
                 }
               },
               "children": [
@@ -844,8 +845,7 @@
               "id": "brand-northbound",
               "type": "column",
               "props": {
-                "span": 4,
-                "part": "slide"
+                "span": 12
               },
               "styles": {
                 "base": {
@@ -855,12 +855,14 @@
                   "alignItems": "center",
                   "gap": 12,
                   "aspectRatio": "1/1",
-                  "background": "#ede7da",
                   "radius": 14,
                   "overflow": "hidden",
                   "paddingLeft": 24,
                   "paddingRight": 24,
-                  "textAlign": "center"
+                  "textAlign": "center",
+                  "width": 340,
+                  "position": "absolute",
+                  "transition": "slow"
                 }
               },
               "children": [
@@ -902,7 +904,16 @@
                 }
               ]
             }
-          ]
+          ],
+          "styles": {
+            "base": {
+              "display": "flex",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "height": 360,
+              "overflow": "hidden"
+            }
+          }
         },
         {
           "id": "brands-controls",
@@ -913,7 +924,11 @@
           },
           "styles": {
             "base": {
-              "paddingTop": 24
+              "paddingTop": 24,
+              "display": "flex",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "gap": 4
             }
           },
           "children": [
@@ -921,7 +936,7 @@
               "id": "brands-prev-col",
               "type": "column",
               "props": {
-                "span": 5,
+                "span": 2,
                 "align": "center"
               },
               "children": [
@@ -936,35 +951,23 @@
                         "style": "secondary"
                       }
                     ],
-                    "align": "center",
-                    "part": "prev"
+                    "align": "center"
                   }
                 }
-              ]
-            },
-            {
-              "id": "brands-dots",
-              "type": "column",
-              "props": {
-                "span": 2,
-                "align": "center",
-                "part": "dots"
-              },
+              ],
               "styles": {
                 "base": {
-                  "display": "flex",
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "gap": 8
+                  "width": 44,
+                  "flexGrow": 0,
+                  "flexShrink": 0
                 }
-              },
-              "children": []
+              }
             },
             {
               "id": "brands-next-col",
               "type": "column",
               "props": {
-                "span": 5,
+                "span": 2,
                 "align": "center"
               },
               "children": [
@@ -979,11 +982,17 @@
                         "style": "secondary"
                       }
                     ],
-                    "align": "center",
-                    "part": "next"
+                    "align": "center"
                   }
                 }
-              ]
+              ],
+              "styles": {
+                "base": {
+                  "width": 44,
+                  "flexGrow": 0,
+                  "flexShrink": 0
+                }
+              }
             }
           ]
         }
@@ -992,10 +1001,6 @@
         "base": {
           "paddingTop": 130,
           "paddingBottom": 60
-        },
-        "mobile": {
-          "paddingTop": 96,
-          "paddingBottom": 40
         }
       }
     },
@@ -1667,7 +1672,7 @@
       "props": {
         "width": "boxed",
         "paddingY": 9,
-        "background": "paper",
+        "background": "none",
         "anchor": "locations"
       },
       "children": [
@@ -1713,7 +1718,12 @@
             }
           }
         }
-      ]
+      ],
+      "styles": {
+        "base": {
+          "background": "#faf8f4"
+        }
+      }
     },
     {
       "id": "blog",
@@ -1732,7 +1742,7 @@
             "heading": "From the Road Ahead",
             "headingLevel": 2,
             "count": 3,
-            "showDates": true
+            "showDates": false
           }
         }
       ]
@@ -1806,8 +1816,7 @@
               "id": "contact-right",
               "type": "column",
               "props": {
-                "span": 6,
-                "background": "paper"
+                "span": 6
               },
               "styles": {
                 "base": {
