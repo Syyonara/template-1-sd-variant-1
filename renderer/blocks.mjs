@@ -443,7 +443,12 @@ const BLOCKS = {
       type: 'object',
       properties: {
         menuId: str('Which menu to show, by id. Menus are managed on the Menus screen.'),
-        layout: str('Direction.', { enum: ['horizontal', 'vertical'], default: 'horizontal' }),
+        layout: str(
+          'How the menu draws. "mega" turns each top-level item with children into a ' +
+            'full-width panel whose second level becomes the columns — the standard ' +
+            'dealer mega nav. It needs a three-level menu: item > column heading > links.',
+          { enum: ['horizontal', 'vertical', 'mega'], default: 'horizontal' },
+        ),
         collapseOnMobile: bool('Collapse behind a menu button on small screens.'),
         align: str('Alignment within its column.', {
           enum: ['start', 'center', 'end'],

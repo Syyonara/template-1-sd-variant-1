@@ -72,10 +72,17 @@ export const BEHAVIOUR_PROPS = {
     default: '',
   }),
   behaviourOptions: str('Settings for the behaviour, as a JSON object. Ignored if it does not parse.'),
-  part: str('The role this node plays in the nearest ancestor behaviour.', {
-    enum: ['', ...PARTS],
-    default: '',
-  }),
+  part: str(
+    'The role this node plays in the nearest ancestor behaviour. Space-separate to ' +
+      'play several at once — "item control" is a drilldown\'s middle column, ' +
+      `filtered by the level above and filtering the level below. One of: ${PARTS.join(', ')}.`,
+    {
+      // A pattern rather than an enum: an enum cannot express a combination, and
+      // every name is still checked individually when the attributes are built.
+      pattern: `^$|^(?:${PARTS.join('|')})(?: (?:${PARTS.join('|')}))*$`,
+      default: '',
+    },
+  ),
 };
 
 /**

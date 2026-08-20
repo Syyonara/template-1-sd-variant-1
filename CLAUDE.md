@@ -123,6 +123,30 @@ site/blog/posts/<slug>.json  One post
 site/custom-code.json        Site-wide css/js escape hatch — last resort
 ```
 
+### Templates and display conditions
+
+A template is a full layout — header, a `contentArea`, footer — and **display
+conditions decide which pages it wraps**. A template with no matching condition
+is not an error: it builds, it validates, and it appears on nothing. That is the
+most expensive mistake available here, so `npm run validate` now refuses an
+unknown condition type and warns when no template covers the site.
+
+```json
+{ "version": 2, "id": "default", "name": "Site template",
+  "conditions": [{ "type": "entireSite", "ref": null }],
+  "nodes": [ /* header … */ { "id": "content", "type": "contentArea", "props": {} } /* … footer */ ] }
+```
+
+Condition types, least to most specific: `entireSite`, `allPages`, `allPosts`,
+`blog`, `inventory`, `pageGroup` (`ref` = a group name), `page` / `post`
+(`ref` = a slug). The most specific match wins, so a homepage with its own
+treatment is a second template with `{ "type": "page", "ref": "home" }` — not a
+copy of the default with one section changed.
+
+Every site needs one `entireSite` or `allPages` template, or pages fall through
+to no chrome at all. And a template needs **exactly one** `contentArea`: none
+means the page has nowhere to go, two means there is no answer to which.
+
 Two cross-file rules the validator checks and nothing else will:
 
 - Every entry in `site/pages.json` needs a matching `site/pages/<dir>/page.json`,
@@ -151,6 +175,102 @@ reference it. Do not inline it because the library is empty.
 
 ---
 
+## 4a. Navigation: menus, dropdowns and mega panels
+
+Navigation is the part most often got wrong, so it gets its own section.
+
+A menu is **structure only** — a named tree of destinations in `site/menus.json`.
+It has no idea where it appears or what it looks like; the `menu` block that
+places it owns the presentation. That separation is what lets one menu be a
+header bar, a footer column and a mega panel on the same site without being
+copied three times.
+
+```json
+{
+  "version": 3,
+  "menus": [
+    {
+      "id": "main",
+      "name": "Main navigation",
+      "items": [
+        { "id": "inventory", "label": "Inventory", "type": "inventory", "ref": null },
+        { "id": "service", "label": "Service", "type": "page", "ref": "service" },
+        { "id": "call", "label": "(801) 555-0100", "type": "url", "url": "tel:+18015550100" }
+      ]
+    }
+  ]
+}
+```
+
+**Item types** — the type decides how the destination resolves at build time:
+
+| `type` | Uses | Resolves to |
+|---|---|---|
+| `page` | `ref` = a page **slug** | That page's current path. Rename the page and the link follows. |
+| `post` | `ref` = a post slug | The post under the blog's base path. |
+| `inventory` | `ref` = optional sub-path | The live storefront under its prefix (`/store`). |
+| `url` | `url` | Verbatim — external links, `tel:`, `mailto:`, `#anchor`. |
+| `label` | — | **Not a link.** A heading inside a panel. |
+
+Never write a page's address as a `url` item. `page` + slug survives the page
+being moved; a typed path does not, and nothing warns you when it breaks.
+
+**Depth is 3, and the third level is what makes a mega menu.** Nesting is
+`children` on any item.
+
+**Placing a menu** — `{"type":"menu","props":{"menuId":"main","layout":"horizontal"}}`:
+
+| Prop | |
+|---|---|
+| `menuId` | Which menu. Required. |
+| `layout` | `horizontal` (a bar, submenus as dropdown cards), `vertical` (stacked — footers), `mega` (see below). |
+| `collapseOnMobile` | Collapse behind a hamburger. Set it on the header's menu. |
+| `align` | `start` / `center` / `end` within its column. |
+| `depth` | How many levels to draw. `1` hides submenus. |
+
+### Mega menus
+
+A mega panel is not a different data model — it is a **three-level menu** drawn
+with `layout: "mega"`:
+
+```
+Sales                     level 1 — the trigger in the bar
+├── Showroom              level 2 — a column heading (type "label", so not a link)
+│   ├── Volvo             level 3 — the links in that column
+│   └── Mack
+└── Category
+    ├── Day Cab
+    └── Sleeper
+```
+
+```json
+{ "id": "nav", "type": "menu", "props": { "menuId": "main", "layout": "mega", "collapseOnMobile": true } }
+```
+
+Level two becomes the columns, level three the links, and the panel spans the
+viewport. Below 1100px it becomes an ordinary stacked disclosure. Nothing is
+scripted, and the dealer can edit every label on the Menus screen afterwards.
+
+Two things to get right:
+
+- Column headings are `type: "label"`. A heading that is also a link is allowed
+  (`page`/`url`), but a `label` is the honest choice for a heading that goes
+  nowhere — `#` links are a dead end for keyboard and screen-reader users.
+- A mega panel is `position: absolute` and viewport-wide. **No ancestor may clip
+  overflow**, so do not put `overflow: hidden` on the header section.
+
+### What a menu is not for
+
+A **utility bar** — phone number on the left, a few links on the right — is a
+section with a row and two columns: a `text` or `buttons` block on one side, a
+`menu` on the other. Do not try to express two alignment groups as one menu.
+
+A **drilldown** (region → state → city) is a `filter` behaviour, not a menu. See
+§5: the middle column's nodes carry `part: "item control"` — filtered by the
+level above, filtering the level below.
+
+---
+
 ## 5. Interaction without JavaScript
 
 Carousels, filters, dropdowns, drawers and rotators are **declared, not scripted**.
@@ -165,6 +285,13 @@ own accessible implementation binds at runtime:
 Available: `carousel` `filter` `dropdown` `drawer` `rotator` `scrollstate`
 `dependentselect` `mapsync`. Each behaviour's expected `part` names are in
 `renderer/behaviours.mjs` — a mismarked part fails silently, so check them.
+
+**A node may play several parts at once**, space-separated. That is how a
+chained drilldown works — Crossroad's Region → State → City panel is one
+`filter` whose state buttons are `part: "item control"`: hidden unless their
+region is chosen, and choosing one filters the cities below. Items carry the
+facet they belong to as `data-` attributes; controls carry `data-bz-facet` and
+`data-bz-value`. Multi-facet filtering with a live count is built in.
 
 This is the *only* supported route to interaction. Custom widgets cannot contain
 `<script>`, and per-page scripts are a last resort.

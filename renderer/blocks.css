@@ -498,6 +498,68 @@ a.bz-card:hover { border-color: var(--muted); }
 .bz-subnav .bz-navitem > a { color: var(--ink); }
 .bz-menu--vertical .bz-subnav { position: static; display: flex; border: 0; padding: var(--space-2) 0 0 var(--space-3); background: none; box-shadow: none; }
 
+/* Mega nav: the same menu data, drawn as a full-width panel.
+   A three-level menu is already the right shape for this — item > column
+   heading > links — so nothing about the model changes; only where the panel
+   sits and how its children flow. Level two becomes the columns, level three
+   the links under each, and a `label` item is a column heading that is
+   deliberately not a link. Centred on the trigger with a viewport-wide panel,
+   which needs no JS and no wrapper: the only requirement is that no ancestor
+   clips overflow. */
+.bz-menu--mega .bz-nav > .bz-navitem--has-sub > .bz-subnav {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 100vw;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-7) var(--space-5);
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+/* Each column: a heading plus its links, stacked and static inside the panel. */
+.bz-menu--mega .bz-nav > .bz-navitem--has-sub > .bz-subnav > .bz-navitem {
+  min-width: 9rem;
+}
+.bz-menu--mega .bz-subnav .bz-subnav {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  min-width: 0;
+  transform: none;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.bz-menu--mega .bz-subnav > .bz-navitem > .bz-navlabel {
+  display: block;
+  font: 700 var(--text-eyebrow) / 1 var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* Below the grid width a full-viewport panel is unusable; it becomes the
+   ordinary stacked disclosure the collapse behaviour already handles. */
+@media (max-width: 1100px) {
+  .bz-menu--mega .bz-nav > .bz-navitem--has-sub > .bz-subnav {
+    position: static;
+    width: auto;
+    max-width: none;
+    transform: none;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-3);
+  }
+}
+
 .bz-menu-wrap { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1 1 auto; }
 .bz-menu-toggle {
   display: none;

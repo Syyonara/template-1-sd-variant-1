@@ -22,6 +22,7 @@ const KNOWN_KEYWORDS = new Set([
   'required',
   'items',
   'enum',
+  'pattern',
   'default',
   'minimum',
   'maximum',
@@ -67,6 +68,11 @@ function check(schema, value, path, errors) {
 
   if (schema.enum && !schema.enum.includes(value)) {
     errors.push({ path, message: `must be one of ${schema.enum.join(', ')}` });
+  }
+  // Used where a value is a combination rather than one of a list — a node's
+  // `part` may name several roles at once, which an enum cannot describe.
+  if (schema.pattern && typeof value === 'string' && !new RegExp(schema.pattern).test(value)) {
+    errors.push({ path, message: schema.description || `does not match ${schema.pattern}` });
   }
   if (typeof schema.minimum === 'number' && value < schema.minimum) {
     errors.push({ path, message: `must be >= ${schema.minimum}` });

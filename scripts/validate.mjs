@@ -26,6 +26,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  CONDITION_TYPES,
   MENU_ITEM_TYPES,
   RENDERER_VERSION,
   allWidgetIds,
@@ -190,6 +191,10 @@ if (!existsSync(pagesPath)) {
   }
 }
 
+const CONDITION_IDS = CONDITION_TYPES.map(c => c.id);
+const pageSlugs = new Set(pages.map(p => p.slug));
+let sitewideTemplate = false;
+
 /* ----------------------------------------------------------- page documents */
 
 const templateIds = new Set();
@@ -207,6 +212,38 @@ for (const file of listJson(join(SITE, 'templates'))) {
     continue;
   }
   templateIds.add(parsed.id);
+  // Display conditions decide which pages a template wraps, and an unrecognised
+  // type simply never matches — so the template builds, validates, and silently
+  // appears on nothing. That is the most expensive kind of mistake here: the
+  // header exists in the repo and on no page, with nothing to explain it.
+  const conditions = Array.isArray(value?.conditions) ? value.conditions : [];
+  if (!conditions.length) {
+    fail(
+      rel(path),
+      'conditions',
+      'has no display conditions, so it wraps no pages',
+      `Add one, e.g. { "type": "entireSite" }. Types: ${CONDITION_IDS.join(', ')}.`,
+    );
+  }
+  for (const [i, condition] of conditions.entries()) {
+    if (!CONDITION_IDS.includes(condition?.type)) {
+      fail(
+        rel(path),
+        `conditions[${i}].type`,
+        `"${condition?.type}" is not a display condition, so this template matches nothing`,
+        `One of: ${CONDITION_IDS.join(', ')}.`,
+      );
+      continue;
+    }
+    const spec = CONDITION_TYPES.find(c => c.id === condition.type);
+    if (spec?.ref && !condition.ref) {
+      fail(rel(path), `conditions[${i}].ref`, `a "${condition.type}" condition needs a ref`);
+    }
+    if (spec?.ref === 'page' && condition.ref && !pageSlugs.has(condition.ref)) {
+      fail(rel(path), `conditions[${i}].ref`, `no page with slug "${condition.ref}"`);
+    }
+    if (['entireSite', 'allPages'].includes(condition.type)) sitewideTemplate = true;
+  }
   const { errors, warnings } = validateTemplate(value);
   for (const issue of errors) fail(rel(path), issue.path, issue.message);
   for (const issue of warnings) note(rel(path), `${issue.path}: ${issue.message}`);
@@ -295,7 +332,6 @@ for (const file of listJson(join(SITE, 'blog', 'posts'))) {
 /* -------------------------------------------------------------------- menus */
 
 const menusPath = join(SITE, 'menus.json');
-const pageSlugs = new Set(pages.map((p) => p.slug));
 if (existsSync(menusPath)) {
   const { value, error } = readJson(menusPath);
   if (error) {
@@ -323,6 +359,15 @@ if (existsSync(menusPath)) {
       walk(menu.items, `${menu.id}.items`);
     }
   }
+}
+
+// A site whose pages match no template renders with no header and no footer.
+// Legal — a one-page site may want that — but almost never intended.
+if (templateIds.size && !sitewideTemplate) {
+  note(
+    'site/templates/',
+    'no template has an entireSite or allPages condition, so any page not matched by a more specific one renders with no header or footer',
+  );
 }
 
 /* ------------------------------------------------- can the platform adopt it? */

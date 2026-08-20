@@ -321,9 +321,14 @@
    * Without this, a rotator inside a carousel slide would steal the carousel's
    * prev/next buttons — and nesting behaviours is normal in real designs.
    */
+  // `~=` rather than `=`: data-bz-part holds a space-separated list, so one
+  // element can play more than one role. A drilldown needs exactly that — the
+  // state button in a region/state/city nav is an `item` (hidden when its region
+  // is not chosen) and a `control` (choosing it filters the cities) at the same
+  // time. Matching the whole attribute made that shape impossible to express.
   function parts(root, name) {
     return Array.prototype.filter.call(
-      root.querySelectorAll('[data-bz-part="' + name + '"]'),
+      root.querySelectorAll('[data-bz-part~="' + name + '"]'),
       function (node) {
         return node.closest('[data-bz-behavior]') === root;
       },

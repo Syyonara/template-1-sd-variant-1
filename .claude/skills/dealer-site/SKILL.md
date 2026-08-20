@@ -56,6 +56,22 @@ In this order, and stop at the first that works:
 
 Interaction is declared with `behaviour` / `part`, never scripted. See CLAUDE.md §5.
 
+## Navigation, specifically
+
+Both reference handoffs lead with navigation, and it is where most of the
+mistakes happen. CLAUDE.md §4a is the full contract; the short version:
+
+- A menu is **data** (`site/menus.json`); the `menu` block is **presentation**.
+  Never type a list of links into a page.
+- **Mega panels are a three-level menu** with `layout: "mega"` — trigger >
+  column heading (`type: "label"`) > links. No new block, no script.
+- A **utility bar** with a left and a right group is a row with two columns,
+  not one menu.
+- Link to pages with `type: "page"` + the **slug**, never a typed path.
+- A template's **display conditions** decide which pages it wraps. A template
+  with a wrong or missing condition renders on nothing while everything still
+  validates and builds — check that one template has `entireSite` or `allPages`.
+
 ## Things that will bite you
 
 - **Never reuse or renumber node ids** in a file that already exists. A changed

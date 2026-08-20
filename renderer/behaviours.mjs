@@ -111,8 +111,19 @@ export function behaviourAttrs(props, ctx, nodeId) {
   if (behaviour && BEHAVIOURS.includes(behaviour)) out['data-bz-behavior'] = behaviour;
   else if (behaviour && ctx?.warn) ctx.warn(`Unknown behaviour "${behaviour}" (${nodeId || '?'}) — ignored.`);
 
-  if (part && PARTS.includes(part)) out['data-bz-part'] = part;
-  else if (part && ctx?.warn) ctx.warn(`Unknown behaviour part "${part}" (${nodeId || '?'}) — ignored.`);
+  // A node may play several roles at once — "item control" is a drilldown's
+  // middle column, filtered by the level above it and filtering the level below.
+  // Each name is checked separately so one typo does not silently drop the rest.
+  if (part) {
+    const names = part.split(/\s+/).filter(Boolean);
+    const known = names.filter(name => PARTS.includes(name));
+    for (const name of names) {
+      if (!PARTS.includes(name) && ctx?.warn) {
+        ctx.warn(`Unknown behaviour part "${name}" (${nodeId || '?'}) — ignored.`);
+      }
+    }
+    if (known.length) out['data-bz-part'] = known.join(' ');
+  }
 
   const raw = props.behaviourOptions;
   if (out['data-bz-behavior'] && typeof raw === 'string' && raw.trim()) {

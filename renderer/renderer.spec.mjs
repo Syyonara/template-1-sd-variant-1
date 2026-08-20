@@ -1426,7 +1426,11 @@ test('anchor and scope are declared props, not renderer-only conventions', () =>
   assert.ok(UNIVERSAL_PROPS.scope, 'scope is stated');
   assert.ok(UNIVERSAL_PROPS.behaviour.enum.includes('carousel'));
   // Empty is a legal value: it is how the inspector says "no behaviour".
-  assert.ok(UNIVERSAL_PROPS.part.enum.includes(''));
+  // `part` is a pattern rather than an enum: it may name several roles at once.
+  assert.ok(new RegExp(UNIVERSAL_PROPS.part.pattern).test(''));
+  assert.ok(new RegExp(UNIVERSAL_PROPS.part.pattern).test('item'));
+  assert.ok(new RegExp(UNIVERSAL_PROPS.part.pattern).test('item control'));
+  assert.ok(!new RegExp(UNIVERSAL_PROPS.part.pattern).test('nonsense'));
 });
 
 test('an image prop interpolated into src renders the image, not an empty tag', () => {
@@ -1452,4 +1456,74 @@ test('an image prop interpolated into src renders the image, not an empty tag', 
   assert.doesNotMatch(out.html, /src=""/);
   assert.equal(out.html.match(/data:image\/svg\+xml/g).length, 3);
   assert.match(out.html, /alt="Alt text 1"/);
+});
+
+test('a node may play several behaviour parts at once', () => {
+  // A drilldown's middle column is filtered by the level above it and filters
+  // the level below. One element, two roles — the reason `part` is a list.
+  const { errors } = validateDocument({
+    version: 2,
+    nodes: [
+      {
+        id: 's',
+        type: 'section',
+        props: { behaviour: 'filter' },
+        children: [
+          { id: 'state', type: 'heading', props: { text: 'Utah', part: 'item control' } },
+        ],
+      },
+    ],
+  });
+  assert.equal(errors.length, 0, JSON.stringify(errors));
+
+  const html = renderDocument({
+    nodes: [{ id: 'x', type: 'heading', props: { text: 'Utah', part: 'item control' } }],
+  }, {});
+  assert.match(html, /data-bz-part="item control"/);
+});
+
+test('an unknown part is dropped without taking the valid ones with it', () => {
+  const warnings = [];
+  const html = renderDocument(
+    { nodes: [{ id: 'x', type: 'heading', props: { text: 'Utah', part: 'item nonsense' } }] },
+    { warn: (m) => warnings.push(m) },
+  );
+  assert.match(html, /data-bz-part="item"/);
+  assert.ok(warnings.some((w) => /nonsense/.test(w)));
+});
+
+test('a menu can be drawn as a mega panel', () => {
+  const menus = {
+    version: 3,
+    menus: [
+      {
+        id: 'main',
+        name: 'Main',
+        items: [
+          {
+            id: 'sales',
+            label: 'Sales',
+            type: 'label',
+            children: [
+              {
+                id: 'showroom',
+                label: 'Showroom',
+                type: 'label',
+                children: [{ id: 'volvo', label: 'Volvo', type: 'url', url: '/volvo' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const html = renderDocument(
+    { nodes: [{ id: 'nav', type: 'menu', props: { menuId: 'main', layout: 'mega' } }] },
+    { menus },
+  );
+  assert.match(html, /bz-menu--mega/);
+  // Three levels survive: trigger, column heading, link. The panel is CSS.
+  assert.match(html, /Sales/);
+  assert.match(html, /bz-navlabel">Showroom/);
+  assert.match(html, /href="\/volvo"/);
 });
