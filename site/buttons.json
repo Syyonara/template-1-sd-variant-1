@@ -87,7 +87,7 @@
   {
     "id": "back-to-top",
     "label": "Back to top",
-    "url": "/#top",
+    "url": "#top",
     "style": "primary",
     "intent": "back-to-top",
     "newTab": false,
