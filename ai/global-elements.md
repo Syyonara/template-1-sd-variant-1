@@ -38,12 +38,22 @@ naming all pages, which beats one naming the entire site:
 | `entireSite` | everything |
 | `allPages` / `allPosts` | every page / every post |
 | `blog` | the post index |
-| `inventory` | live inventory browse and detail |
+| `inventory` | the whole live storefront — browse, detail, and parts |
+| `parts` | the parts catalogue only; without it, parts use the `inventory` template |
 | `pageGroup` + `ref` | every page in one group |
 | `page` / `post` + `ref` | one named page or post |
 
 There is no special home-page mechanism. A template for the home page is
 `{ "type": "page", "ref": "home" }` like any other.
+
+**Linking into the storefront.** It is a separate app mounted under one prefix
+(`/store` by default), and a menu item reaches it with
+`{ "type": "inventory", "ref": "<route>" }` — `inventory`, `parts`, `search`,
+`account`, `sign-in`, `checkout` — where `ref` may carry a query string, as in
+`"inventory?condition=new"`. A null `ref` gives bare `/store`, the storefront's
+own landing page, which is rarely what a nav item means: "All inventory" is
+`ref: "inventory"`. Never type the prefix into a `url` item; it is configuration,
+and `validate` fails a menu that does.
 
 The header and footer fragments the storefront borrows are **derived**: whatever
 precedes the content area is the header, whatever follows it is the footer. Nothing

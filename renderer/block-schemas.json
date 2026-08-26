@@ -160,9 +160,16 @@
     {
       "id": "inventory",
       "label": "Inventory",
-      "description": "Live inventory browse and detail pages.",
+      "description": "Live inventory browse and detail pages, and the parts catalogue.",
       "ref": null,
       "specificity": 300
+    },
+    {
+      "id": "parts",
+      "label": "Parts",
+      "description": "The parts catalogue only. Without this, parts pages use the Inventory template.",
+      "ref": null,
+      "specificity": 350
     },
     {
       "id": "pageGroup",
@@ -1056,29 +1063,8 @@
     },
     "part": {
       "type": "string",
-      "description": "The role this node plays in the nearest ancestor behaviour.",
-      "enum": [
-        "",
-        "child",
-        "close",
-        "control",
-        "count",
-        "dot",
-        "dots",
-        "empty",
-        "frame",
-        "item",
-        "live",
-        "next",
-        "panel",
-        "parent",
-        "prev",
-        "slide",
-        "toggle",
-        "totop",
-        "track",
-        "trigger"
-      ],
+      "description": "The role this node plays in the nearest ancestor behaviour. Space-separate to play several at once — \"item control\" is a drilldown's middle column, filtered by the level above and filtering the level below. One of: child, close, control, count, dot, dots, empty, frame, item, live, next, panel, parent, prev, slide, toggle, totop, track, trigger.",
+      "pattern": "^$|^(?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger)(?: (?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger))*$",
       "default": ""
     }
   },
@@ -1172,29 +1158,8 @@
           },
           "part": {
             "type": "string",
-            "description": "The role this node plays in the nearest ancestor behaviour.",
-            "enum": [
-              "",
-              "child",
-              "close",
-              "control",
-              "count",
-              "dot",
-              "dots",
-              "empty",
-              "frame",
-              "item",
-              "live",
-              "next",
-              "panel",
-              "parent",
-              "prev",
-              "slide",
-              "toggle",
-              "totop",
-              "track",
-              "trigger"
-            ],
+            "description": "The role this node plays in the nearest ancestor behaviour. Space-separate to play several at once — \"item control\" is a drilldown's middle column, filtered by the level above and filtering the level below. One of: child, close, control, count, dot, dots, empty, frame, item, live, next, panel, parent, prev, slide, toggle, totop, track, trigger.",
+            "pattern": "^$|^(?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger)(?: (?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger))*$",
             "default": ""
           }
         }
@@ -1265,29 +1230,8 @@
           },
           "part": {
             "type": "string",
-            "description": "The role this node plays in the nearest ancestor behaviour.",
-            "enum": [
-              "",
-              "child",
-              "close",
-              "control",
-              "count",
-              "dot",
-              "dots",
-              "empty",
-              "frame",
-              "item",
-              "live",
-              "next",
-              "panel",
-              "parent",
-              "prev",
-              "slide",
-              "toggle",
-              "totop",
-              "track",
-              "trigger"
-            ],
+            "description": "The role this node plays in the nearest ancestor behaviour. Space-separate to play several at once — \"item control\" is a drilldown's middle column, filtered by the level above and filtering the level below. One of: child, close, control, count, dot, dots, empty, frame, item, live, next, panel, parent, prev, slide, toggle, totop, track, trigger.",
+            "pattern": "^$|^(?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger)(?: (?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger))*$",
             "default": ""
           }
         }
@@ -1364,29 +1308,8 @@
           },
           "part": {
             "type": "string",
-            "description": "The role this node plays in the nearest ancestor behaviour.",
-            "enum": [
-              "",
-              "child",
-              "close",
-              "control",
-              "count",
-              "dot",
-              "dots",
-              "empty",
-              "frame",
-              "item",
-              "live",
-              "next",
-              "panel",
-              "parent",
-              "prev",
-              "slide",
-              "toggle",
-              "totop",
-              "track",
-              "trigger"
-            ],
+            "description": "The role this node plays in the nearest ancestor behaviour. Space-separate to play several at once — \"item control\" is a drilldown's middle column, filtered by the level above and filtering the level below. One of: child, close, control, count, dot, dots, empty, frame, item, live, next, panel, parent, prev, slide, toggle, totop, track, trigger.",
+            "pattern": "^$|^(?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger)(?: (?:child|close|control|count|dot|dots|empty|frame|item|live|next|panel|parent|prev|slide|toggle|totop|track|trigger))*$",
             "default": ""
           }
         }
@@ -1889,10 +1812,11 @@
           },
           "layout": {
             "type": "string",
-            "description": "Direction.",
+            "description": "How the menu draws. \"mega\" turns each top-level item with children into a full-width panel whose second level becomes the columns — the standard dealer mega nav. It needs a three-level menu: item > column heading > links.",
             "enum": [
               "horizontal",
-              "vertical"
+              "vertical",
+              "mega"
             ],
             "default": "horizontal"
           },

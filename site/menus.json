@@ -27,25 +27,25 @@
           "id": "inventory",
           "label": "Inventory",
           "type": "inventory",
-          "ref": null,
+          "ref": "inventory",
           "children": [
             {
               "id": "inv-all",
               "label": "All Inventory",
               "type": "inventory",
-              "ref": null
+              "ref": "inventory"
             },
             {
               "id": "inv-new",
               "label": "New Trucks",
-              "type": "url",
-              "url": "/store?condition=new"
+              "type": "inventory",
+              "ref": "inventory?condition=new"
             },
             {
               "id": "inv-used",
               "label": "Used Trucks",
-              "type": "url",
-              "url": "/store?condition=used"
+              "type": "inventory",
+              "ref": "inventory?condition=used"
             }
           ]
         },
@@ -58,8 +58,8 @@
         {
           "id": "lease-rental",
           "label": "Lease & Rental",
-          "type": "url",
-          "url": "/store?offer=lease"
+          "type": "inventory",
+          "ref": "inventory?offer=lease"
         },
         {
           "id": "service",
@@ -70,8 +70,8 @@
         {
           "id": "parts",
           "label": "Parts",
-          "type": "url",
-          "url": "/#parts"
+          "type": "inventory",
+          "ref": "parts"
         },
         {
           "id": "financing",
@@ -83,7 +83,7 @@
           "id": "nav-search-item",
           "label": "Search",
           "type": "inventory",
-          "ref": null
+          "ref": "search"
         }
       ]
     },
@@ -118,14 +118,14 @@
         {
           "id": "f-new",
           "label": "New Trucks",
-          "type": "url",
-          "url": "/store?condition=new"
+          "type": "inventory",
+          "ref": "inventory?condition=new"
         },
         {
           "id": "f-used",
           "label": "Used Trucks",
-          "type": "url",
-          "url": "/store?condition=used"
+          "type": "inventory",
+          "ref": "inventory?condition=used"
         },
         {
           "id": "f-financing",
@@ -148,8 +148,8 @@
         {
           "id": "fs-parts",
           "label": "Parts",
-          "type": "url",
-          "url": "/#parts"
+          "type": "inventory",
+          "ref": "parts"
         },
         {
           "id": "fs-contact",

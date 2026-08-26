@@ -55,9 +55,16 @@ export const CONDITION_TYPES = [
   {
     id: 'inventory',
     label: 'Inventory',
-    description: 'Live inventory browse and detail pages.',
+    description: 'Live inventory browse and detail pages, and the parts catalogue.',
     ref: null,
     specificity: 300,
+  },
+  {
+    id: 'parts',
+    label: 'Parts',
+    description: 'The parts catalogue only. Without this, parts pages use the Inventory template.',
+    ref: null,
+    specificity: 350,
   },
   {
     id: 'pageGroup',
@@ -87,7 +94,12 @@ export function conditionMatches(condition, target) {
     case 'blog':
       return kind === 'blog';
     case 'inventory':
-      return kind === 'inventory';
+      // The whole storefront, parts included. A site that has only an Inventory
+      // template must keep covering its parts pages; `parts` is the finer opt-in
+      // for dealers who want that catalogue framed differently.
+      return kind === 'inventory' || kind === 'parts';
+    case 'parts':
+      return kind === 'parts';
     case 'pageGroup':
       return kind === 'page' && !!target.group && target.group === condition.ref;
     case 'page':

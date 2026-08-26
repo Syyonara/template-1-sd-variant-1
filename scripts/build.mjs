@@ -295,6 +295,10 @@ function chromeFor(target) {
       id: key,
       header: renderDocument({ nodes: before }, renderCtx),
       footer: renderDocument({ nodes: after }, renderCtx),
+      // A template's own script is part of its chrome — a sticky header is the
+      // usual case — so the storefront has to load it alongside the markup it
+      // enhances, or inventory pages get the header without the behaviour.
+      scripts: templateScript(resolved.template),
     });
   }
   return chromeCache.get(key);
@@ -550,6 +554,11 @@ ${posts
 const storefrontRoutes = [
   { pattern: `/${PREFIX}`, target: { kind: 'inventory' } },
   { pattern: `/${PREFIX}/*`, target: { kind: 'inventory' } },
+  // Listed after the catch-all deliberately: the storefront resolves a path by
+  // longest matching prefix, not by table order, so these only take effect for
+  // a site that actually has a Parts template.
+  { pattern: `/${PREFIX}/parts`, target: { kind: 'parts' } },
+  { pattern: `/${PREFIX}/parts/*`, target: { kind: 'parts' } },
   ...emitted.map((p) => ({ pattern: p.path, target: { kind: 'page', slug: p.slug, group: p.group } })),
   ...posts.map((post) => ({ pattern: `${blogBase}/${post.slug}`, target: { kind: 'post', slug: post.slug } })),
 ];
@@ -568,7 +577,12 @@ for (const route of storefrontRoutes) {
       header: key === 'default' ? '/partials/header.html' : `/partials/header--${key}.html`,
       footer: key === 'default' ? '/partials/footer.html' : `/partials/footer--${key}.html`,
       styles: ['/partials/tokens.css', '/partials/reset.css', '/partials/blocks.css', '/partials/chrome.css'],
-      scripts: ['/partials/chrome.js', '/partials/widgets.js'],
+      scripts: [
+        '/partials/chrome.js',
+        '/partials/widgets.js',
+        ...(CUSTOM.hasJs ? ['/scripts/custom.js'] : []),
+        ...chrome.scripts,
+      ],
       template: chrome.id,
     };
   }

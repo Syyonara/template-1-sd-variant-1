@@ -579,6 +579,19 @@ test('display conditions resolve by specificity, most specific first', () => {
   assert.equal(resolveTemplate({ kind: 'post', slug: 'x' }, templates).template.id, 'site');
 });
 
+test('an inventory condition covers the parts catalogue until a parts one exists', () => {
+  const site = { ...TEMPLATE, id: 'site', conditions: [{ type: 'entireSite' }] };
+  const inventory = { ...TEMPLATE, id: 'inv', conditions: [{ type: 'inventory' }] };
+  const parts = { ...TEMPLATE, id: 'parts', conditions: [{ type: 'parts' }] };
+
+  // Adding the parts condition must not strand the parts pages of every site
+  // that already has one inventory template and no idea this exists.
+  assert.equal(resolveTemplate({ kind: 'parts' }, [site, inventory]).template.id, 'inv');
+  assert.equal(resolveTemplate({ kind: 'parts' }, [site, inventory, parts]).template.id, 'parts');
+  assert.equal(resolveTemplate({ kind: 'inventory' }, [site, inventory, parts]).template.id, 'inv');
+  assert.equal(resolveTemplate({ kind: 'inventory' }, [site, parts]).template.id, 'site');
+});
+
 test('the home page is not a special case — it is a page with a condition', () => {
   const templates = [
     { ...TEMPLATE, id: 'site', conditions: [{ type: 'entireSite' }] },
@@ -671,7 +684,11 @@ test('a menu renders nested items as a nested list', () => {
   const html = renderMenu(menus, 'main', CTX);
   assert.match(html, /data-bz-menu="main"/);
   assert.match(html, /bz-subnav/);
-  assert.match(html, /Our team/);
+  // A nested item, whatever this repo happens to call it — the spec travels
+  // with the renderer, so it must not assert one site's menu wording.
+  const nested = parseMenus(menus).menus.find(m => m.id === 'main').items.find(i => i.children?.length);
+  assert.ok(nested, 'the main menu needs a nested item for this to test anything');
+  assert.ok(html.includes(nested.children[0].label));
 });
 
 test('an unknown menu renders nothing rather than failing the build', () => {

@@ -208,12 +208,39 @@ copied three times.
 |---|---|---|
 | `page` | `ref` = a page **slug** | That page's current path. Rename the page and the link follows. |
 | `post` | `ref` = a post slug | The post under the blog's base path. |
-| `inventory` | `ref` = optional sub-path | The live storefront under its prefix (`/store`). |
+| `inventory` | `ref` = a storefront route (below) | That route under the storefront prefix (`/store`). |
 | `url` | `url` | Verbatim — external links, `tel:`, `mailto:`, `#anchor`. |
 | `label` | — | **Not a link.** A heading inside a panel. |
 
 Never write a page's address as a `url` item. `page` + slug survives the page
 being moved; a typed path does not, and nothing warns you when it breaks.
+
+### Linking into the live storefront
+
+The storefront is a separate app proxied in under one prefix, and **`ref` names
+the route inside it**. Leaving `ref` null gives you bare `/store`, which is the
+storefront's own landing page — almost never what a nav item means. Say which
+route you want:
+
+| `ref` | Resolves to | |
+|---|---|---|
+| `"inventory"` | `/store/inventory` | **The listings page.** What "Inventory" / "All inventory" means. |
+| `"parts"` | `/store/parts` | The parts catalogue. |
+| `"search"` | `/store/search` | Storefront search. |
+| `"account"` | `/store/account` | The buyer's account. |
+| `"sign-in"` | `/store/sign-in` | Sign in. |
+| `"checkout"` | `/store/checkout` | Cart / checkout. |
+| `null` | `/store` | The storefront landing page. Rarely what you want. |
+
+A `ref` may carry a query string, which is how a pre-filtered view is linked:
+`"inventory?condition=new"` → `/store/inventory?condition=new`. "New trucks",
+"Used trucks" and "Lease & rental" are all this — one listings page with a facet
+applied, not three pages.
+
+**Never write these as `url` items.** `{"type":"url","url":"/store/inventory"}`
+hardcodes the prefix, and the prefix is configuration: the day it changes, every
+one of those links 404s and nothing warns you. `type: "inventory"` resolves the
+prefix at build time from `dealer.config.json`.
 
 **Depth is 3, and the third level is what makes a mega menu.** Nesting is
 `children` on any item.
