@@ -567,15 +567,21 @@ const chromeManifest = {};
 const table = [];
 for (const route of storefrontRoutes) {
   const chrome = chromeFor(route.target);
-  const key = chrome.id === defaultChrome.id ? 'default' : chrome.id;
+  // Keyed by template id, never by the word "default". Naming the canonical
+  // chrome "default" collided with a template whose id genuinely is `default`:
+  // the first one to claim the key kept it and the other was dropped, so once a
+  // site had an Inventory template its ordinary pages were served the inventory
+  // header. Which entry is canonical is stated separately, below.
+  const key = chrome.id;
+  const canonical = chrome.id === defaultChrome.id;
   if (!chromeManifest[key]) {
-    if (key !== 'default') {
+    if (!canonical) {
       write(`partials/header--${key}.html`, chrome.header);
       write(`partials/footer--${key}.html`, chrome.footer);
     }
     chromeManifest[key] = {
-      header: key === 'default' ? '/partials/header.html' : `/partials/header--${key}.html`,
-      footer: key === 'default' ? '/partials/footer.html' : `/partials/footer--${key}.html`,
+      header: canonical ? '/partials/header.html' : `/partials/header--${key}.html`,
+      footer: canonical ? '/partials/footer.html' : `/partials/footer--${key}.html`,
       styles: ['/partials/tokens.css', '/partials/reset.css', '/partials/blocks.css', '/partials/chrome.css'],
       scripts: [
         '/partials/chrome.js',
@@ -600,6 +606,10 @@ write(
       storefrontPrefix: PREFIX,
       fontsHref: FONTS_HREF,
       chrome: chromeManifest,
+      // Which chrome to use for a path no route names. Older manifests implied
+      // this by calling the entry "default"; saying it outright is what lets the
+      // entries be keyed by template id instead.
+      defaultChrome: defaultChrome.id,
       routes: table,
     },
     null,
