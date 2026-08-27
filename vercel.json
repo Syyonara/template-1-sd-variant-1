@@ -6,15 +6,11 @@
   "rewrites": [
     {
       "source": "/store",
-      "destination": "https://REPLACE_STOREFRONT_ORIGIN/store"
-    },
-    {
-      "source": "/store/",
-      "destination": "https://REPLACE_STOREFRONT_ORIGIN/store/"
+      "destination": "https://kumar.buzznerdrv.com/store"
     },
     {
       "source": "/store/:path*",
-      "destination": "https://REPLACE_STOREFRONT_ORIGIN/store/:path*"
+      "destination": "https://kumar.buzznerdrv.com/store/:path*"
     }
   ],
   "headers": [

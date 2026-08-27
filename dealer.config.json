@@ -3,10 +3,10 @@
   "contractVersion": "4.0.0",
   "name": "Ironhaul Truck Centers",
   "shortName": "Ironhaul",
-  "channelToken": "REPLACE_CHANNEL_TOKEN",
-  "domain": "REPLACE_CHANNEL_TOKEN.buzznerd.com",
-  "url": "https://REPLACE_CHANNEL_TOKEN.buzznerd.com",
-  "storefrontOrigin": "https://REPLACE_STOREFRONT_ORIGIN",
+  "channelToken": "kumar-mt8xwyfx",
+  "domain": "kumar-mt8xwyfx.buzznerd.com",
+  "url": "https://kumar-mt8xwyfx.buzznerd.com",
+  "storefrontOrigin": "https://kumar.buzznerdrv.com",
   "storefrontPrefix": "store",
   "logo": "/logo.svg",
   "favicon": "/favicon.svg",
@@ -27,7 +27,10 @@
     "latitude": 32.7767,
     "longitude": -96.797,
     "priceRange": "$$",
-    "openingHours": ["Mo-Fr 07:00-18:00", "Sa 08:00-14:00"]
+    "openingHours": [
+      "Mo-Fr 07:00-18:00",
+      "Sa 08:00-14:00"
+    ]
   },
   "seo": {
     "defaultTitle": "Ironhaul Truck Centers | New & Used Commercial Trucks, Service & Parts",
