@@ -8,6 +8,8 @@
       "ref": null
     }
   ],
+  "css": "",
+  "js": "",
   "nodes": [
     {
       "id": "chrome",
@@ -77,6 +79,11 @@
                 "span": 6,
                 "align": "center"
               },
+              "styles": {
+                "mobile": {
+                  "hide": true
+                }
+              },
               "children": [
                 {
                   "id": "utility-nav",
@@ -97,12 +104,7 @@
                     }
                   }
                 }
-              ],
-              "styles": {
-                "mobile": {
-                  "hide": true
-                }
-              }
+              ]
             }
           ]
         },
@@ -138,6 +140,14 @@
                 "span": 5,
                 "align": "center"
               },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": 2
+                }
+              },
               "children": [
                 {
                   "id": "logo",
@@ -161,15 +171,7 @@
                     }
                   }
                 }
-              ],
-              "styles": {
-                "base": {
-                  "display": "flex",
-                  "flexDirection": "row",
-                  "alignItems": "center",
-                  "gap": 2
-                }
-              }
+              ]
             },
             {
               "id": "masthead-nav",
@@ -177,6 +179,15 @@
               "props": {
                 "span": 7,
                 "align": "center"
+              },
+              "styles": {
+                "base": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "justifyContent": "flex-end",
+                  "gap": 1
+                }
               },
               "children": [
                 {
@@ -211,16 +222,7 @@
                     }
                   }
                 }
-              ],
-              "styles": {
-                "base": {
-                  "display": "flex",
-                  "flexDirection": "row",
-                  "alignItems": "center",
-                  "justifyContent": "flex-end",
-                  "gap": 1
-                }
-              }
+              ]
             }
           ]
         }
@@ -231,7 +233,8 @@
       "type": "contentArea",
       "props": {
         "label": "Page content"
-      }
+      },
+      "children": []
     },
     {
       "id": "site-footer",
